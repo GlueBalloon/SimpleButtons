@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Buffer Order</key>
+	<array>
+		<string>Main</string>
+		<string>greetingScreen</string>
+		<string>actionsDemo</string>
+		<string>attributesDemo</string>
+		<string>screenChangingDemo</string>
+		<string>positioningDemo</string>
+		<string>SupportedOrientation </string>
+		<string>SimpleButtons</string>
+		<string>ButtonTables</string>
+		<string>Backup</string>
+	</array>
+</dict>
+</plist>
