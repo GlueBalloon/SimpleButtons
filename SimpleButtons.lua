@@ -6,7 +6,7 @@
 --  manages how pieces look and behave
 
 simpleButtons = {}
-simpleButtons.baseFontSize = WIDTH * 0.027
+simpleButtons.baseFontSize = math.max(WIDTH, HEIGHT) * 0.027
 simpleButtons.ui = {}
 simpleButtons.useGrid = false
 simpleButtons.gridSize = 15
