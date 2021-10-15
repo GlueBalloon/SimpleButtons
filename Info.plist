@@ -12,8 +12,8 @@
 		<string>positioningDemo</string>
 		<string>SupportedOrientation </string>
 		<string>SimpleButtons</string>
-		<string>ButtonTables</string>
 		<string>Backup</string>
+		<string>ButtonTables</string>
 	</array>
 </dict>
 </plist>

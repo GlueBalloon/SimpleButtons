@@ -1,6 +1,5 @@
 
 function setup()
-    
     supportedOrientations(LANDSCAPE_ANY)
     
     textMode(CENTER)

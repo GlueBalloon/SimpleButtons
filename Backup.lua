@@ -3,13 +3,13 @@ simpleButtons.ui[ [[positioningDemo,positioningDemo,13]] ] =
 {text = [[You can also manually set x & y if you want,
 but then you can't drag them.]],
 x = 0.5, y = 0.15,
-action = simpleButtons.defaultButtonAction,
+action = simpleButtons.defaultButtonAction
 }
 
 simpleButtons.ui[ [[attributesDemo,attributesDemo,31]] ] = 
 {text = [[And font size from fontSize()]],
 x = 0.41727672035139, y = 0.33349609375,
-action = simpleButtons.defaultButtonAction,
+action = simpleButtons.defaultButtonAction
 }
 
 simpleButtons.ui[ [[attributesDemo,attributesDemo,6]] ] = 
@@ -17,13 +17,13 @@ simpleButtons.ui[ [[attributesDemo,attributesDemo,6]] ] =
 just like Codea's
 other 2D elements.]],
 x = 0.34699853587116, y = 0.8740234375,
-action = simpleButtons.defaultButtonAction,
+action = simpleButtons.defaultButtonAction
 }
 
 simpleButtons.ui[ [[greetingScreen,greetingScreen,27]] ] = 
 {text = [[next]],
 x = 0.89714494875549, y = 0.095703125,
-action = simpleButtons.defaultButtonAction,
+action = simpleButtons.defaultButtonAction
 }
 
 simpleButtons.ui[ [[positioningDemo,positioningDemo,4]] ] = 
@@ -31,7 +31,7 @@ simpleButtons.ui[ [[positioningDemo,positioningDemo,4]] ] =
 Just tap "buttons are draggable" 
 and drag 'em!]],
 x = 0.49304538799414, y = 0.8427734375,
-action = simpleButtons.defaultButtonAction,
+action = simpleButtons.defaultButtonAction
 }
 
 simpleButtons.ui[ [[greetingScreen,greetingScreen,17]] ] = 

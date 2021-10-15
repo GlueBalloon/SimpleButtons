@@ -4,8 +4,113 @@
 --  enables pieces to be initialized with defaults
 
 --  manages how pieces look and behave
+ROW, COLUMN, ICONS = 1, 2, 3
+
+function window(title, contents, w, h, x, y)
+    --insert window title after content type 
+    local padding, hi
+    if contents[1] == COLUMN then
+        goto column
+    elseif contents[1] == ICONS then
+        goto icons
+    end
+
+    ::column::
+    if true then
+    local padding = simpleButtons.standardLineHeight() * 0.5
+    local width, height = simpleButtons.contentDimensions(contents)
+    local minWidth = textSize("min window width is biiiiig")
+    local width = math.max(width, minWidth)
+    local paddedH = height + ((#contents + 3) * padding)
+    local paddedW = width + (padding * 2)
+    pushStyle()
+    fill(29, 180, 224, 162)
+    local container = button("", nil, paddedW, paddedH, nil, x, y, {isWindow = true, contents = contents})
+    popStyle()
+    local x, y = container.x * WIDTH, container.y * HEIGHT
+
+    local windowTop = y + (paddedH * 0.5)
+    local spacedY = windowTop - padding
+    pushStyle() noFill()
+    local titleButton = button(title, nil, paddedH, padding * 2, nil, x, spacedY - padding)
+    popStyle()
+    spacedY = spacedY - (padding * 3)
+    pushStyle()
+    fill(178, 213, 224, 162)
+    for i=2, #contents do 
+        local _, thisH = simpleButtons.buttonDimensionsFor(contents[i])
+        local thisB = button(contents[i], nil, width, nil, nil, x, spacedY - (thisH * 0.5))
+        spacedY = spacedY - thisH - padding
+    end
+    return 
+    end
+
+    ::icons::
+    pushStyle()
+    fill(255)
+    
+    local _, titleH = textSize(title)
+    text(title, WIDTH/2, HEIGHT - (titleH * 1.25))
+    local iconSpaceW = WIDTH / 6
+    local iconSpaceH = HEIGHT / 2.5
+    local iconSize = iconSpaceW * 0.7
+    local x = iconSpaceW / 2
+
+    textAlign(CENTER)
+    textWrapWidth(iconSpaceW * 0.95)
+    for ii = 1, math.ceil((#contents - 1) / 6) do
+        x = iconSpaceW / 2
+    for i = 1, 6 do
+            local index = i + 1 + ((ii - 1) * 6)
+            if contents[index] then
+            local spriteY = HEIGHT - iconSpaceH / 2
+            spriteY = spriteY - (iconSpaceH * (ii - 1)) - titleH
+
+                sprite(contents[index][1], x, spriteY, iconSize, iconSize)
+        
+        local textW, textH = textSize(contents[index][2])
+            local textY = spriteY - ((iconSize + textH) * 0.6)
+
+        text(contents[index][2], x, textY)
+        
+        x = x + iconSpaceW
+        -- sprite(asset.builtin.Blocks.Brick_Grey,x,iconSpaceH)
+  --      sprite(asset.builtin.Blocks.Blank_White)
+            end 
+        end
+    end
+    popStyle()
+end
+
 
 simpleButtons = {}
+simpleButtons.standardLineHeight = function() 
+    _, lineHeight = textSize("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    return lineHeight
+end
+simpleButtons.buttonDimensionsFor = function(thisText) 
+    local boundsW, boundsH = textSize(thisText)
+    lineHeight = simpleButtons.standardLineHeight()
+    boundsW = boundsW + (lineHeight * 1.8)
+    boundsH = boundsH + lineHeight 
+    return boundsW, boundsH
+end
+simpleButtons.contentDimensions = function(content) 
+    local pieces = {} 
+    for i=2, #content do 
+        local dimensions = {simpleButtons.buttonDimensionsFor(content[i])}
+        table.insert(pieces, dimensions)
+    end 
+    local totalW, totalH = 0, 0
+    if content[1] == COLUMN then 
+        for _, piece in ipairs(pieces) do 
+            totalH = totalH + piece[2]
+            totalW = math.max(totalW, piece[1])
+        end
+    end
+   -- print(totalW, totalH) 
+    return totalW, totalH
+end
 simpleButtons.baseFontSize = math.max(WIDTH, HEIGHT) * 0.027
 simpleButtons.ui = {}
 simpleButtons.useGrid = false
@@ -173,13 +278,13 @@ dataString = dataString.."simpleButtons.ui[ [["..traceback.."]] ] = \n"
 dataString = dataString.."    {text = [["..ui.text.."]],\n"
 dataString = dataString.."    x = "..ui.x
 dataString = dataString..", y = "..ui.y..",\n"
-dataString = dataString.."    action = simpleButtons.defaultButtonAction,\n}\n\n"
+dataString = dataString.."    action = simpleButtons.defaultButtonAction\n}\n\n"
 end
 saveProjectTab("ButtonTables",dataString)
 end
 
 --button only actually needs a name to work, the rest have defaults
-function button(bText, action, width, height, fontColor, x, y)
+function button(bText, action, width, height, fontColor, x, y, specTable)
 --get traceback info 
 --buttons have to be indexed by traceback
 --this lets different buttons have the same texts
@@ -219,8 +324,8 @@ for k, buttonTable in pairs(simpleButtons.ui) do
         else
             -- print("found key that's not a string: ", k)
         end
-    end
-end 
+            end
+        end 
 --  print("found "..#textMatches.." with same text")
 --if only 1 button matches text, use its values but replace its key
 if #textMatches == 1 then
@@ -271,8 +376,9 @@ end
 --if there's still not a tableToDraw, make a new one
 if not tableToDraw or tableToDraw.text ~= bText then
 tableToDraw = simpleButtons.defaultButton(bText, trace.all)
-end
---if x and y were explicitly stated, they should be ordinary numbers
+    end
+    tableToDraw.specTable = specTable
+    --if x and y were explicitly stated, they should be ordinary numbers
 --so make them into percentages
 if x then x = x/WIDTH end
 if y then y = y/HEIGHT end
@@ -284,6 +390,8 @@ _, lineHeight = textSize("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 end
 width = width or boundsW + (lineHeight * 1.8)
 height = height or boundsH + lineHeight
+    --set empty specTable if none
+    specTable = specTable or {}
 --set button drawing values, using saved values if none passed in
 --the saved values should already be percentages
 local x,y = x or tableToDraw.x, y or tableToDraw.y
@@ -313,7 +421,7 @@ end
 x, y = x*WIDTH, y*HEIGHT
 pushStyle()
 local startingFill = color(fill())
-if tableToDraw.isTapped == true then
+if tableToDraw.isTapped == true and not specTable.isWindow then
 fill(fontColor)
 stroke(startingFill)
 end
@@ -339,6 +447,7 @@ simpleButtons.ui[trace.all].isTapped = false
 simpleButtons.evaluateTouchFor(trace.all)
 --set the flag that shows we rendered (used with blurring)
 simpleButtons.ui[trace.all].didRenderAlready = true
+    return simpleButtons.ui[trace.all]
 end
 
 --[[

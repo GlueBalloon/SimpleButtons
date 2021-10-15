@@ -8,7 +8,7 @@ function attributesDemo()
 just like Codea's
 other 2D elements.]])
 
-fill(171, 178, 196)
+fill(55, 216, 91)
 
 button(
 [[They get their fill
@@ -18,7 +18,7 @@ strokeWidth(19)
 
 button("StrokeWidth from strokeWidth().")
 
-stroke(185, 97, 211)
+stroke(53, 169, 26, 206)
 
 button("Stroke color from stroke().")
 
