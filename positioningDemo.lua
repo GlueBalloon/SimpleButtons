@@ -4,7 +4,8 @@ function positioningDemo()
     button([[
 Positioning is wayyy simple too!
 Just tap "buttons are draggable" 
-and drag 'em!]])
+in the Parameters panel and
+drag 'em around!]])
 
 button("Try it!")
 
