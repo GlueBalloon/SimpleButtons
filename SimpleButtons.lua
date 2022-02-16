@@ -19,6 +19,7 @@ simpleButtons.buttonDimensionsFor = function(thisText)
 end
 
 simpleButtons.baseFontSize = math.max(WIDTH, HEIGHT) * 0.027
+simpleButtons.defaultCornerRadius = simpleButtons.baseFontSize * 1.25
 simpleButtons.ui = {}
 simpleButtons.useGrid = false
 simpleButtons.gridSize = 15
@@ -332,10 +333,7 @@ if tableToDraw.isTapped == true and not specTable.isWindow then
 fill(fontColor)
 stroke(startingFill)
 end
-local radius = height/2
-if radius > 30 then
-radius = 30
-end
+local radius = simpleButtons.defaultCornerRadius
 --draw the button
 roundedRectangle{
 x=x,y=y,w=width,h=height,
