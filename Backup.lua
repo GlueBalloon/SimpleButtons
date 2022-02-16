@@ -1,4 +1,7 @@
 function simpleButtons.restoreDefaultPositions()
+    
+    --Button tables are automatically created for every new button coded. Changes to code or text will result in additional tables being created. Unused tables are not automatically erased, so eventually the button tables page may need to be manually edited to remove unused tables. 
+    
 simpleButtons.ui[ [[attributesDemo,attributesDemo,42]] ] = 
     {text = [[next]],
     x = 0.90254872563718, y = 0.11333333333333,

@@ -18,7 +18,7 @@ button(
 [[They get their fill
 color from fill().]])
 
-strokeWidth(40)
+strokeWidth(30)
 
 button("StrokeWidth from strokeWidth().")
 
