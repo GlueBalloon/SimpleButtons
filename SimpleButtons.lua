@@ -19,7 +19,9 @@ simpleButtons.buttonDimensionsFor = function(thisText)
 end
 
 simpleButtons.baseFontSize = math.max(WIDTH, HEIGHT) * 0.027
-simpleButtons.defaultCornerRadius = simpleButtons.baseFontSize * 1.25
+simpleButtons.cornerRadius = simpleButtons.baseFontSize * 1.25
+simpleButtons.marginPaddingH = simpleButtons.baseFontSize * 0.5
+simpleButtons.marginPaddingW = simpleButtons.baseFontSize
 simpleButtons.ui = {}
 simpleButtons.useGrid = false
 simpleButtons.gridSize = 15
@@ -296,8 +298,8 @@ if width == nil or height == nil then
 boundsW, boundsH = textSize(bText)
 _, lineHeight = textSize("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 end
-width = width or boundsW + (lineHeight * 1.8)
-height = height or boundsH + lineHeight
+width = width or boundsW + (simpleButtons.marginPaddingW * 2)
+    height = height or boundsH + (simpleButtons.marginPaddingH * 2)
     --set empty specTable if none
     specTable = specTable or {}
 --set button drawing values, using saved values if none passed in
@@ -333,7 +335,7 @@ if tableToDraw.isTapped == true and not specTable.isWindow then
 fill(fontColor)
 stroke(startingFill)
 end
-local radius = simpleButtons.defaultCornerRadius
+local radius = simpleButtons.cornerRadius
 --draw the button
 roundedRectangle{
 x=x,y=y,w=width,h=height,

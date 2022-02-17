@@ -1,25 +1,6 @@
 function greetingScreen()
     
     background(156, 222, 193)
-    
-    --[[
-    window("screen-size window", {ICONS, 
-        {asset.builtin.Blocks.Brick_Grey, "helpers"},
-        {asset.builtin.Blocks.Brick_Red, "geese"},
-        {asset.builtin.Blocks.Sand, "nice people"},
-        {asset.builtin.Blocks.Snow, "Portugal"},
-        {asset.builtin.Blocks.Stone, "ranch dressing"},
-        {asset.builtin.Blocks.Stone_Browniron_Alt, "coal"},
-        {asset.builtin.Blocks.Dirt, "mixers"},
-        {asset.builtin.Blocks.Dirt_Sand, "nimble bits"},
-        {asset.builtin.Blocks.Fence_Stone, "Halloween"}
-    })
-    
-    window("window title", {COLUMN, "button 1", "button 2"})
-    if true then return end
-    ]]
-    
-    
 
     pushStyle()
     font("Verdana-BoldItalic")
@@ -37,7 +18,7 @@ function greetingScreen()
 accommodate
 a text block...]] )
     
-pushStyle()
+    pushStyle()
     fontSize(fontSize() * 0.9)
     button([[
 ...and you can also manually 
