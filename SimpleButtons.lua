@@ -37,9 +37,9 @@ end
 
 
 parameter.boolean("buttons are draggable", false)
---parameter.boolean("snap_to_grid", false, function()
---    simpleButtons.useGrid = snap_to_grid
---end)
+parameter.boolean("snap_to_grid", false, function()
+    simpleButtons.useGrid = snap_to_grid
+end)
 
 
 simpleButtons.defaultButton = function(bText, traceback)
