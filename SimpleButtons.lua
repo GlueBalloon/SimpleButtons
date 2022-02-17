@@ -7,7 +7,10 @@
 
 simpleButtons = {}
 simpleButtons.standardLineHeight = function() 
+    pushStyle()
+    textWrapWidth(0)
     _, lineHeight = textSize("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    popStyle()
     return lineHeight
 end
 simpleButtons.buttonDimensionsFor = function(thisText) 

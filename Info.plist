@@ -10,11 +10,11 @@
 		<string>attributesDemo</string>
 		<string>screenChangingDemo</string>
 		<string>positioningDemo</string>
-		<string>SupportedOrientation </string>
 		<string>SimpleButtons</string>
 		<string>Backup</string>
 		<string>ButtonTables</string>
 		<string>Experimental</string>
+		<string>SupportedOrientation </string>
 	</array>
 </dict>
 </plist>

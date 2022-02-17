@@ -6,13 +6,10 @@ function greetingScreen()
     font("Verdana-BoldItalic")
     fontSize(fontSize() * 3)
     button("Hi!")
-    
     popStyle()
     
     button("This is a SimpleButton!")
-    
     button("It sizes itself to fit any text...")
-    
     button([[
 ...it can even
 accommodate

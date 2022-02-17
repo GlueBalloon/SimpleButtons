@@ -1,5 +1,4 @@
 function screenChangingDemo()
-    
     background(141, 224, 187)
     
     button([[
