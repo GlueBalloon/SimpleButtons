@@ -15,6 +15,6 @@ drag 'em around!]])
 You can also manually set x & y if you want,
 but then you can't drag them.]], nil, nil, nil, nil, WIDTH/2, HEIGHT*0.15)
     
-    button("start", function() currentScreen = greetingScreen end)
+    button("note", function() currentScreen = note end)
 
 end
