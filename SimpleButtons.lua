@@ -30,16 +30,25 @@ simpleButtons.useGrid = false
 simpleButtons.gridSpacing = math.min(WIDTH, HEIGHT) / 80
 
 simpleButtons.hasCheckedForDependency = false
-simpleButtons.clearStoredTablesIfDependency = function()
+simpleButtons.isBeingRunAsDependency = function()
     local tabExists = false
     local localTabs = listProjectTabs()
     for _, tabName in ipairs(localTabs) do
         if tabName == "ButtonTables" then tabExists = true end
     end
     if tabExists then
-        if readProjectTab("ButtonTables") ~= readProjectTab("SimpleButtons:ButtonTables") then
-            simpleButtons.ui = {}
-        end
+        local tabData = readProjectTab("ButtonTables")
+        local tabsMatch = tabData ~= readProjectTab("SimpleButtons:ButtonTables")
+        return tabsMatch, tabData
+    else
+        return true
+    end
+end
+simpleButtons.loadLocalTabIfDependency = function()
+    local isDependency, localTabData = simpleButtons.isBeingRunAsDependency() 
+    if isDependency and localTabData ~= nil then
+        local dataLoader = load(localTabData)
+        dataLoader()
     end
     simpleButtons.hasCheckedForDependency = true
 end
@@ -95,7 +104,6 @@ end
 --  a button has been moved (activatedButton was dragged in editable mode)
 --  nothing (this piece did not interact with the touch)
 simpleButtons.evaluateTouchFor = function(traceback, touch)
-    print(debug.traceback())
     if touch == nil then
         touch = CurrentTouch
     end
@@ -205,7 +213,7 @@ end
 --button only actually needs a name to work, the rest have defaults
 function button(bText, action, width, height, fontColor, x, y, specTable)
     if simpleButtons.hasCheckedForDependency == false then
-        simpleButtons.clearDefaultTablesIfDependency()
+        simpleButtons.loadLocalTabIfDependency()
     end
     --get traceback info 
     --buttons have to be indexed by traceback
