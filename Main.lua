@@ -11,7 +11,6 @@ function setup()
     parameter.action("restore default positions", function()
         simpleButtons.restoreDefaultPositions()
     end)
-
 end
 
 function draw()
