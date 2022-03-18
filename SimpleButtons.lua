@@ -23,7 +23,7 @@ end
 
 simpleButtons.baseFontSize = math.max(WIDTH, HEIGHT) * 0.027
 simpleButtons.cornerRadius = simpleButtons.baseFontSize * 1.25
-simpleButtons.marginPaddingH = simpleButtons.baseFontSize * 0.5
+simpleButtons.marginPaddingH = simpleButtons.baseFontSize * 0.55
 simpleButtons.marginPaddingW = simpleButtons.baseFontSize
 simpleButtons.ui = {}
 simpleButtons.useGrid = false
