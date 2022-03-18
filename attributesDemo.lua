@@ -15,7 +15,7 @@ other 2D elements.]])
 [[They get their fill
 color from fill().]])
 
-    strokeWidth(38)
+    strokeWidth(25)
     button("StrokeWidth from strokeWidth().")
 
     stroke(48, 156, 240, 206)

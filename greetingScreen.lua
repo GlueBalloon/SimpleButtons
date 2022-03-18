@@ -4,7 +4,7 @@ function greetingScreen()
 
     pushStyle()
     font("Verdana-BoldItalic")
-    fontSize(fontSize() * 3)
+    fontSize(fontSize() * 4)
     button("Hi!")
     popStyle()
     
