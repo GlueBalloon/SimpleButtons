@@ -11,8 +11,8 @@ function window(title, contents, w, h, x, y)
     
     ::column::
     if true then
-        local padding = simpleButtons.standardLineHeight() * 0.5
-        local width, height = simpleButtons.contentDimensions(contents)
+        local padding = SB.standardLineHeight() * 0.5
+        local width, height = SB.contentDimensions(contents)
         local minWidth = textSize("min window width is biiiiig")
         local width = math.max(width, minWidth)
         local paddedH = height + ((#contents + 3) * padding)
@@ -32,7 +32,7 @@ function window(title, contents, w, h, x, y)
         pushStyle()
         fill(178, 213, 224, 162)
         for i=2, #contents do 
-            local _, thisH = simpleButtons.buttonDimensionsFor(contents[i])
+            local _, thisH = SB.buttonDimensionsFor(contents[i])
             local thisB = button(contents[i], nil, width, nil, nil, x, spacedY - (thisH * 0.5))
             spacedY = spacedY - thisH - padding
         end
@@ -78,10 +78,10 @@ end
 
 --used in window experiment:
 --[[
-simpleButtons.contentDimensions = function(content) 
+SB.contentDimensions = function(content) 
     local pieces = {} 
     for i=2, #content do 
-        local dimensions = {simpleButtons.buttonDimensionsFor(content[i])}
+        local dimensions = {SB.buttonDimensionsFor(content[i])}
         table.insert(pieces, dimensions)
     end 
     local totalW, totalH = 0, 0

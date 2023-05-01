@@ -4,14 +4,13 @@ function setup()
     
     textMode(CENTER)
     fill(109, 167, 214)
-    fontSize(simpleButtons.baseFontSize)
+    fontSize(SB.baseFontSize)
     
     currentScreen = greetingScreen
     
     parameter.action("restore default positions", function()
-        simpleButtons.restoreDefaultPositions()
+        SB.restoreDefaultPositions()
     end)
-
 end
 
 function draw()

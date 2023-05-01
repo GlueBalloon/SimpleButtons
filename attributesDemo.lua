@@ -15,7 +15,7 @@ other 2D elements.]])
 [[They get their fill
 color from fill().]])
 
-    strokeWidth(38)
+    strokeWidth(20)
     button("StrokeWidth from strokeWidth().")
 
     stroke(48, 156, 240, 206)
@@ -24,12 +24,12 @@ color from fill().]])
     font("AmericanTypewriter-Bold")
     button("Font from font().")
     
-    fontSize(simpleButtons.baseFontSize * 1.8)
+    fontSize(SB.baseFontSize * 1.8)
     button("And font size from fontSize()")
     
-    fontSize(simpleButtons.baseFontSize * 0.9)
+    fontSize(SB.baseFontSize * 0.9)
     button("(and you can set a custom font color too)", nil, nil, nil, color(28, 86, 141))
     
     popStyle()
-    button("next", function() currentScreen = screenChangingDemo end)
+button("next", function() currentScreen = positioningDemo end)
 end
