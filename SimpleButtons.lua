@@ -29,7 +29,8 @@ SB.ui = {}
 SB.useGrid = false
 SB.gridSpacing = math.min(WIDTH, HEIGHT) / 80
 SB.touchOffset = {x = 0, y = 0}
-
+SB.deletableButtonsChecked = false
+SB.deletableButtons = {}
 
 SB.hasCheckedForDependency = false
 SB.isBeingRunAsDependency = function()
@@ -209,18 +210,79 @@ end
 
 SB.savePositions = function ()
     local dataString = ""
+    local deletableDataString = ""
+    local deletableComment = "--BUTTONS NOT FOUND IN SOURCE CODE, MAY BE DELETABLE:"
+    
     for traceback, ui in pairs(SB.ui) do
-        dataString = dataString.."SB.ui[ [["..traceback.."]] ] = \n"
-        dataString = dataString.."    {text = [["..ui.text.."]],\n"
-        dataString = dataString.."    x = "..ui.x
-        dataString = dataString..", y = "..ui.y..",\n"
-        dataString = dataString.."    width = "..(ui.width or "nil")
-        dataString = dataString..", height = "..(ui.height or "nil")..",\n"
-        dataString = dataString.."    action = SB.defaultButtonAction\n}\n\n"
+        local buttonData = "SB.ui[ [[" .. traceback .. "]] ] = \n" ..
+        "    {text = [[" .. ui.text .. "]],\n" ..
+        "    x = " .. ui.x .. ", y = " .. ui.y .. ",\n" ..
+        "    width = " .. (ui.width or "nil") .. ", height = " .. (ui.height or "nil") .. ",\n" ..
+        "    action = SB.defaultButtonAction\n}\n\n"
+        
+        if SB.deletableButtons[traceback] then
+            deletableDataString = deletableDataString .. buttonData
+        else
+            dataString = dataString .. buttonData
+        end
     end
-    saveProjectTab("ButtonTables",dataString)
+    
+    -- Check if the deletable comment line already exists
+    local buttonTablesTab = readProjectTab("ButtonTables")
+    local commentExists = buttonTablesTab:find(deletableComment)
+    
+    -- If the deletable comment line does not exist, add it to the end of the dataString
+    if not commentExists then
+        dataString = dataString .. deletableComment .. "\n\n"
+    end
+    
+    -- Append the deletableDataString to the main dataString
+    dataString = dataString .. deletableDataString
+    
+    saveProjectTab("ButtonTables", dataString)
 end
 
+SB.checkForDeletableButtons = function ()
+    if SB.checkedForDeletableButtons then
+        return
+    end
+    SB.checkedForDeletableButtons = true
+    
+    local projectTabs = listProjectTabs()
+    local deletableButtons = {}    
+    for traceback, ui in pairs(SB.ui) do
+        local tab, functionName = string.gmatch(traceback, "(%g*),(%g*),")()
+        
+        -- Check if the tab exists
+        local tabExists = false
+        for _, existingTab in ipairs(projectTabs) do
+            if tab == existingTab then
+                tabExists = true
+                break
+        end
+    end
+        
+    if tabExists then
+        local tabCode = readProjectTab(tab)
+        local functionCode = tabCode:match("function%s+" .. functionName .. "%s-%b()")
+            
+        if functionCode then
+            local buttonTextSearch = "SB.button%b()%s-%b{}%s-%b{}%s-\"?%[" .. ui.text
+                local buttonTextFound = functionCode:find(buttonTextSearch)
+                    
+                if not buttonTextFound then
+                    deletableButtons[traceback] = true
+                end
+            else
+                deletableButtons[traceback] = true
+            end
+        else
+            deletableButtons[traceback] = true
+        end
+    end
+    return deletableButtons        
+end
+    
 
 -- Gets the table with the same trace
 function SB.findTableWithSameTrace(trace, bText)
@@ -294,9 +356,11 @@ end
 
 --button only actually needs a name to work, the rest have defaults
 function button(bText, action, width, height, fontColor, x, y, specTable, imageAsset, radius)
-    if SB.hasCheckedForDependency == false then
-        SB.loadLocalTabIfDependency()
+    if not SB.deletableButtonsChecked then
+        SB.deletableButtonsChecked = true
+        SB.deletableButtons = SB.checkForDeletableButtons()
     end
+    
     --get traceback info 
     --buttons have to be indexed by traceback
     --this lets different buttons have the same texts

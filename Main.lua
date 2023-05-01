@@ -11,10 +11,10 @@ function setup()
     parameter.action("restore default positions", function()
         SB.restoreDefaultPositions()
     end)
+    
+    testFindDeletableButtons()
 end
 
-function draw()
-    
+function draw()    
     currentScreen()
-
 end
