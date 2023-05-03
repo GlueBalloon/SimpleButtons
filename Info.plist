@@ -16,6 +16,10 @@
 		<string>Experimental</string>
 		<string>SupportedOrientation </string>
 		<string>Tests</string>
+		<string>TestTab</string>
+		<string>Tab1</string>
+		<string>Tab2</string>
+		<string>Tab3</string>
 	</array>
 </dict>
 </plist>

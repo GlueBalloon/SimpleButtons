@@ -48,50 +48,6 @@ SB.isBeingRunAsDependency = function()
     end
 end
 
--- Function implementation
-SB.buttonTextFound = function(traceback, ui)
-    local tab, functionName = string.gmatch(traceback, "(%g*),(%g*),")()
-    local tabCode = readProjectTab(tab)
-    local functionCode = SB.extractFunctionCode(functionName, tabCode)
-    
-    if functionCode then
-        return SB.textPatternFound(ui.text, functionCode)
-    end
-    
-    return false
-end
-
--- Test function
-function testButtonTextFound()
-    local existingTab = "Main" -- Change this to the name of an existing tab in your project if necessary
-    local existingFunc = ""
-    local tabContent = readProjectTab(existingTab)
-    for funcName in string.gmatch(tabContent, "function%s+(%w+)") do
-        existingFunc = funcName
-        break
-    end
-    
-    local existingTraceback = existingTab .. "," .. existingFunc .. ",1"
-    local ui = {
-        text = "Test Button",
-        x = 0.5, y = 0.5,
-        width = 100, height = 50,
-        action = SB.defaultButtonAction
-    }
-    
-    -- Add the button text to the existing function code
-    local existingFunctionCode = "SB.button({text = [[" .. ui.text .. "]]})\n" .. tabContent:match("function%s+" .. existingFunc .. "%s-%b()")
-    saveProjectTab(existingTab, existingFunctionCode)
-    
-    local buttonTextExists = SB.buttonTextFound(existingTraceback, ui)
-    assert(buttonTextExists, "Existing button text not found")
-    
-    -- Restore the original tab content
-    saveProjectTab(existingTab, tabContent)
-    
-    print("passed testButtonTextFound")
-end
-
 
 
 
@@ -112,39 +68,43 @@ SB.tabExists = function(tab, projectTabs)
     return false
 end
 
-SB.extractFunctionCode = function(functionName, tabCode)
-    local functionCode = tabCode:match("function%s+" .. functionName .. "%s-%b()")
-    return functionCode
-end
-
--- Function implementation
-SB.buttonTextFound = function(buttonText, functionCode)
-    local buttonTextSearch = "SB.button%b()%s-%b{}%s-%b{}%s-%[%[" .. buttonText .. "%]%]"
-    local buttonTextFound = functionCode:find(buttonTextSearch)
-    return buttonTextFound ~= nil
-end
-
--- Function implementation
 SB.textPatternFound = function(text, functionCode)
     local pattern = "SB.button%s-%(%s-%{%s-text%s-=%s-%[%[" .. text .. "%]%]%s-%}%s-%)"
     local patternFound = functionCode:find(pattern)
     return patternFound ~= nil
 end
 
--- Test function
-function testTextPatternFound()
-    local functionCode = "SB.button({text = [[Test Button]]})"
-    local existingText = "Test Button"
-    local nonexistentText = "Nonexistent Text"
+SB.extractFunctionCode = function(tab, functionName)
+    local tabCode = readProjectTab(tab)
+    local pattern = "function%s+" .. functionName .. "%s-%b()%s-[^%z]*end"
+    local functionCode = tabCode:match(pattern)
     
-    local textExists = SB.textPatternFound(existingText, functionCode)
-    local textDoesNotExist = not SB.textPatternFound(nonexistentText, functionCode)
-    
-    assert(textExists, "Existing text not found")
-    assert(textDoesNotExist, "Nonexistent text found")
-    print("passed testTextPatternFound")
+    if functionCode then
+        return functionCode
+    else
+        error("Function \"" .. functionName .. "\" not found in project tab \"" .. tab .. "\"")
+    end
 end
 
+
+function SB.removeWhitespace(code)
+    return code:gsub("%s+", "")
+end
+
+
+function SB.buttonTextFound(traceback, ui)
+    local tab, functionName = string.gmatch(traceback, "(%g*),(%g*),")()
+    local functionCode = SB.extractFunctionCode(tab, functionName)
+    
+    if functionCode then
+        local buttonTextFound = SB.textPatternFound(ui.text, functionCode)
+        if buttonTextFound then
+            return true
+        end
+    end
+    
+    return false
+end
 
 
 
