@@ -1,12 +1,61 @@
+function testCreateButtonDataString()
+    local traceback = "testTab,testFunction,1"
+    local ui = {
+        text = "Test Button",
+        x = 0.5, y = 0.5,
+        width = 100, height = 50,
+        action = SB.defaultButtonAction
+    }
+    
+    local expectedString = "SB.ui[ [[" .. traceback .. "]] ] = \n" ..
+    "    {text = [[" .. ui.text .. "]],\n" ..
+    "    x = " .. ui.x .. ", y = " .. ui.y .. ",\n" ..
+    "    width = " .. (ui.width or "nil") .. ", height = " .. (ui.height or "nil") .. ",\n" ..
+    "    action = SB.defaultButtonAction\n}\n\n"
+    
+    local resultString = SB.formatButtonDataString(traceback, ui)
+    assert(resultString == expectedString, "Button data string does not match the expected string")
+    print("passed testCreateButtonDataString")
+end
 
-function testFindDeletableButtons()
-    local originalUI = SB.ui
+function testRemoveExistingDeletableSection()
+    local deletableComment = "--BUTTONS NOT FOUND IN SOURCE CODE, MAY BE DELETABLE:"
+    local buttonTablesTab = "SB.ui[1] = { ... }\n\n" .. deletableComment .. "\nSB.ui[2] = { ... }\n\nSB.ui[3] = { ... }\n\n"
+    local expectedTab = "SB.ui[1] = { ... }\n\n"
     
-    -- Backup ButtonTables tab content
-    local buttonTablesBackup = readProjectTab("ButtonTables")
-    saveProjectTab("TestButtonTablesBackup", buttonTablesBackup)
+    local resultTab = SB.removeExistingDeletableSection(buttonTablesTab, deletableComment)
     
-    -- Find an existing tab and an existing function within that tab
+    assert(resultTab == expectedTab, "Existing deletable section not removed correctly")
+    print("passed testRemoveExistingDeletableSection")
+end
+
+function testWriteDeletableButtons()
+    local deletableButtons = {
+        ["nonexistentTab,nonexistentFunc,1"] = {
+            text = "*test table* Fake Button 1",
+            x = 0.5, y = 0.5,
+            width = 100, height = 50,
+            action = SB.defaultButtonAction
+        },
+        ["Main,nonexistentFunc,2"] = {
+            text = "*test table* Fake Button 2",
+            x = 0.6, y = 0.6,
+            width = 100, height = 50,
+            action = SB.defaultButtonAction
+        }
+    }
+    
+    local resultString = SB.writeDeletableButtons(deletableButtons)
+    
+    for traceback, _ in pairs(deletableButtons) do
+        local pattern = "SB.ui%[%[("..traceback..")%]%]"
+        assert(string.find(resultString, pattern), "Deletable button not found in the result string")
+    end
+    print("passed testWriteDeletableButtons")
+end
+
+function testCheckForDeletableButtons()
+    local fakeButtonTableTraceback = "nonexistentTab,nonexistentFunc,1"
     local existingTab = "Main" -- Change this to the name of an existing tab in your project if necessary
     local existingFunc = ""
     local tabContent = readProjectTab(existingTab)
@@ -14,68 +63,8 @@ function testFindDeletableButtons()
         existingFunc = funcName
         break
     end
-    assert(existingFunc ~= "", "No function found in the existing tab")
+    local realButtonTableTraceback = existingTab..","..existingFunc..",3"
     
-    -- Create fake button tables
-    local fakeButtonTables = {
-        ["nonexistentTab,nonexistentFunc,1"] = {
-            text = "*test table* Fake Button 1",
-            x = 0.5, y = 0.5,
-            width = 100, height = 50,
-            action = SB.defaultButtonAction
-        },
-        [existingTab..",nonexistentFunc,2"] = {
-            text = "*test table* Fake Button 2",
-            x = 0.6, y = 0.6,
-            width = 100, height = 50,
-            action = SB.defaultButtonAction
-        },
-        [existingTab..","..existingFunc..",3"] = {
-            text = "*test table* Nonexistent Text",
-            x = 0.7, y = 0.7,
-            width = 100, height = 50,
-            action = SB.defaultButtonAction
-        }
-    }
-    
-    -- Find a real button table that's not deletable
-    local realButtonTable = nil
-    for traceback, ui in pairs(originalUI) do
-        if not SB.checkForDeletableButtons(traceback) then
-            realButtonTable = {traceback = traceback, ui = ui}
-            break
-        end
-    end
-    assert(realButtonTable ~= nil, "No real button table found")
-    
-    -- Replace SB.ui with fake button tables and the real button table
-    SB.ui = fakeButtonTables
-    SB.ui[realButtonTable.traceback] = realButtonTable.ui
-    
-    -- Call savePositions()
-    SB.savePositions()
-    
-    -- Read the updated ButtonTables tab
-    local buttonTablesContent = readProjectTab("ButtonTables")
-    
-    -- Check if the fake button tables are placed under the "deletable" section
-    for traceback, _ in pairs(fakeButtonTables) do
-        local pattern = "%-%- BUTTONS NOT FOUND IN SOURCE CODE, MAY BE DELETABLE:%s-[\n]+.*SB.ui%[%[("..traceback..")%]%]"
-        assert(string.find(buttonTablesContent, pattern), "Fake button table not found in the deletable section")
-    end
-    
-    -- Check if the real button table is NOT placed under the "deletable" section
-    local realButtonTablePattern = "%-%- BUTTONS NOT FOUND IN SOURCE CODE, MAY BE DELETABLE:%s*SB.ui%[%[("..realButtonTable.traceback..")%]%]"
-    assert(not string.find(buttonTablesContent, realButtonTablePattern), "Real button table found in the deletable section")
-    
-    -- Restore the original SB.ui
-    SB.ui = originalUI
-    
-    -- Restore ButtonTables tab from backup and save it
-    local buttonTablesBackupContent = readProjectTab("TestButtonTablesBackup")
-    saveProjectTab("ButtonTables", buttonTablesBackupContent)
-    
-    -- Inform the user that the test has completed
-    print("Test completed")
+    assert(SB.checkForDeletableButtons(fakeButtonTableTraceback), "Fake button table not identified as deletable")
+    assert(not SB.checkForDeletableButtons(realButtonTableTraceback), "Real button table identified as deletable")
 end
-

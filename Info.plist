@@ -9,14 +9,13 @@
 		<string>actionsDemo</string>
 		<string>attributesDemo</string>
 		<string>positioningDemo</string>
-		<string>note</string>
 		<string>SimpleButtons</string>
+		<string>note</string>
 		<string>Backup</string>
 		<string>ButtonTables</string>
 		<string>Experimental</string>
 		<string>SupportedOrientation </string>
 		<string>Tests</string>
-		<string>TestButtonTablesBackup</string>
 	</array>
 </dict>
 </plist>
