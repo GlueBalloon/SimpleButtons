@@ -6,6 +6,11 @@ function setup()
     testTextPatternFound()
     testPatternMatching()
     testButtonTextFound()
+
+    testFindButtonsWithNoTabs()
+    testFindButtonsWithNoFunctions()
+    testFindButtonsWithNoTexts()
+    testCombineButtonTables()
    -- testCheckForDeletableButtons()
     
     supportedOrientations(LANDSCAPE_ANY)
@@ -176,3 +181,98 @@ function testCheckForDeletableButtons()
     
     print("passed testCheckForDeletableButtons")
 end
+
+
+
+-- Test functions
+function testFindButtonsWithNoTabs()
+    -- Set up test data
+    local projectTabs = {"Tab1", "Tab2"}
+    local uiData = {
+        ["Tab1,buttonFunc1,1"] = {text = "Button1"},
+        ["Tab3,buttonFunc3,1"] = {text = "NonExistentButton"}
+    }
+    
+    local buttonsWithNoTabs = SB.findButtonsWithNoTabs(uiData, projectTabs)
+    assert(buttonsWithNoTabs["Tab3,buttonFunc3,1"], "Button with no tab not found")
+    assert(not buttonsWithNoTabs["Tab1,buttonFunc1,1"], "Button with existing tab incorrectly marked")
+    print("passed testFindButtonsWithNoTabs")
+end
+
+function testFindButtonsWithNoFunctions()
+    -- Set up test data
+    local projectTabs = {"Tab1", "Tab2", "Tab3"}
+    local uiData = {
+        ["Tab1,buttonFunc1,1"] = {text = "Button1"},
+        ["Tab2,nonExistentFunction,1"] = {text = "NonExistentFunctionButton"}
+    }
+    
+    -- Save test tabs
+    saveProjectTab("Tab1", "function buttonFunc1()\n    SB.button({text = [[Button1]]})\nend")
+    saveProjectTab("Tab2", "function buttonFunc2()\n    SB.button({text = [[Button2]]})\nend")
+    
+    local buttonsWithNoFunctions = SB.findButtonsWithNoFunctions(uiData, projectTabs)
+    
+    print("Buttons with no functions:")
+    for traceback, _ in pairs(buttonsWithNoFunctions) do
+        print(traceback)
+    end
+    
+    assert(buttonsWithNoFunctions["Tab2,nonExistentFunction,1"], "Button with no function not found")
+    assert(not buttonsWithNoFunctions["Tab1,buttonFunc1,1"], "Button with existing function incorrectly marked")
+    
+    -- Clean up by deleting the test tabs
+    saveProjectTab("Tab1", "")
+    saveProjectTab("Tab2", "")
+    
+    print("passed testFindButtonsWithNoFunctions")
+end
+
+
+function testFindButtonsWithNoTexts()
+    -- Set up test data
+    local projectTabs = {"Tab1", "Tab2", "Tab3"}
+    local uiData = {
+        ["Tab1,buttonFunc1,1"] = {text = "Button1"},
+        ["Tab2,buttonFunc2,1"] = {text = "NonExistentTextButton"}
+    }
+    
+    local buttonsWithNoTexts = SB.findButtonsWithNoTexts(uiData, projectTabs)
+    assert(buttonsWithNoTexts["Tab2,buttonFunc2,1"], "Button with no text not found")
+    assert(not buttonsWithNoTexts["Tab1,buttonFunc1,1"], "Button with existing text incorrectly marked")
+    print("passed testFindButtonsWithNoTexts")
+end
+
+function testCombineButtonTables()
+    local buttonTable1 = {["Tab1,buttonFunc1,1"] = true}
+    local buttonTable2 = {["Tab2,buttonFunc2,1"] = true}
+    local combinedButtonTable = SB.combineButtonTables(buttonTable1, buttonTable2)
+    
+    assert(combinedButtonTable["Tab1,buttonFunc1,1"], "Button from table1 not found in combined table")
+    assert(combinedButtonTable["Tab2,buttonFunc2,1"], "Button from table2 not found in combined table")
+    print("passed testCombineButtonTables")
+end
+
+--[[
+SB.deletableButtonTables = function ()
+if SB.didSearchForDeletables then
+return
+else
+SB.didSearchForDeletables = true
+end
+
+local buttonDataStrings = SB.allButtonDataStrings()
+local projectTabs = listProjectTabs()
+local functionNames = SB.functionNamesFrom(projectTabs)
+
+local uiWithNonValidTabs = SB.uiWithNonValidTabs(buttonDataStrings, projectTabs)
+local uiWithNonValidFunctions = SB.uiWithNonValidFunctions(buttonDataStrings, functionNames)
+local uiWithNonValidTexts = SB.uiWithNonValidTexts(buttonDataStrings)
+local uiPossibleDuplicates = SB.uiPossibleDuplicates(buttonDataStrings)
+
+local deletables = SB.combineButtonTables(uiWithNonValidTabs, uiWithNonValidFunctions, uiWithNonValidTexts, uiPossibleDuplicates)
+return deletables
+end
+
+]]
+    

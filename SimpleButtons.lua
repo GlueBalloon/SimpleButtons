@@ -79,9 +79,15 @@ SB.extractFunctionCode = function(tab, functionName)
     local pattern = "function%s+" .. functionName .. "%s-%b()%s-[^%z]*end"
     local functionCode = tabCode:match(pattern)
     
+    print("Extracting function code for tab: " .. tab .. " and function: " .. functionName)
+    print("tabCode: " .. tabCode)
+    print("pattern: " .. pattern)
+    
     if functionCode then
+        print("functionCode: " .. functionCode)
         return functionCode
     else
+        print("Function not found")
         error("Function \"" .. functionName .. "\" not found in project tab \"" .. tab .. "\"")
     end
 end
@@ -105,6 +111,131 @@ function SB.buttonTextFound(traceback, ui)
     
     return false
 end
+deletableButtonTables
+SB.checkForDeletableButtons = function ()
+    if SB.checkedForDeletableButtons then
+        return
+    end
+    SB.checkedForDeletableButtons = true
+    
+    local projectTabs = listProjectTabs()
+    local uiData = SB.ui
+    
+    local buttonsWithNoTabs = SB.findButtonsWithNoTabs(uiData, projectTabs)
+    local buttonsWithNoFunctions = SB.findButtonsWithNoFunctions(uiData)
+    local buttonsWithNoTexts = SB.findButtonsWithNoTexts(uiData)
+    
+    local combinedButtonTable = SB.combineButtonTables(buttonsWithNoTabs, buttonsWithNoFunctions, buttonsWithNoTexts)
+    
+    return combinedButtonTable
+end
+
+
+-- Function to find buttons with no corresponding tabs
+SB.findButtonsWithNoTabs = function(uiData, projectTabs)
+    local buttonsWithNoTabs = {}
+    for traceback, ui in pairs(uiData) do
+        local tab, functionName = string.gmatch(traceback, "(%g*),(%g*),")()
+        if not SB.tabExists(tab, projectTabs) then
+            buttonsWithNoTabs[traceback] = true
+        end
+    end
+    return buttonsWithNoTabs
+end
+
+-- Function to find buttons with no corresponding functions in their tabs
+SB.findButtonsWithNoFunctions = function(uiData, projectTabs)
+    local buttonsWithNoFunctions = {}
+    for traceback, ui in pairs(uiData) do
+        local tab, functionName = string.gmatch(traceback, "(%g*),(%g*),")()
+        local tabExists = SB.tabExists(tab, projectTabs)
+        
+        if tabExists then
+            local status, functionCode = pcall(SB.extractFunctionCode, tab, functionName)
+            if not status then
+                buttonsWithNoFunctions[traceback] = true
+            end
+        end
+        print("traceback: " .. traceback)
+        print("tab: " .. tab)
+        print("functionName: " .. functionName)
+        print("tabExists: " .. tostring(tabExists))
+        print("functionCode: " .. tostring(functionCode))
+    end
+    return buttonsWithNoFunctions
+end
+
+
+
+-- Function to find buttons with no corresponding texts in their functions
+SB.findButtonsWithNoTexts = function(uiData, projectTabs)
+    local buttonsWithNoTexts = {}
+    for traceback, ui in pairs(uiData) do
+        local tab, functionName = string.gmatch(traceback, "(%g*),(%g*),")()
+        if SB.tabExists(tab, projectTabs) then
+            local success, functionCode = pcall(SB.extractFunctionCode, tab, functionName)
+            if success and not SB.textPatternFound(ui.text, functionCode) then
+                buttonsWithNoTexts[traceback] = true
+            end
+        end
+    end
+    return buttonsWithNoTexts
+end
+
+-- Function to combine button tables
+SB.combineButtonTables = function(...)
+    local combinedButtonTable = {}
+    local buttonTables = {...}
+    for _, buttonTable in ipairs(buttonTables) do
+        for traceback, value in pairs(buttonTable) do
+            combinedButtonTable[traceback] = value
+        end
+    end
+    return combinedButtonTable
+end
+
+--[[
+SB.checkForDeletableButtons = function ()
+    if SB.checkedForDeletableButtons then
+        return
+    end
+    SB.checkedForDeletableButtons = true
+    
+    local projectTabs = listProjectTabs()
+    local deletableButtons = {}    
+    for traceback, ui in pairs(SB.ui) do
+        local tab, functionName = string.gmatch(traceback, "(%g*),(%g*),?%d*")()
+        
+        print("traceback: " .. traceback)
+        print("tab: " .. tab)
+        print("functionName: " .. functionName)
+        
+        -- Check if the tab exists
+        local tabExists = SB.tabExists(tab, projectTabs)
+        print("tabExists: " .. tostring(tabExists))
+        
+        if tabExists then
+            local functionCode = SB.extractFunctionCode(tab, functionName)
+            
+            if functionCode then
+                print("functionCode: " .. functionCode)
+                local buttonTextFound = SB.textPatternFound(ui.text, functionCode)
+                print("buttonTextFound: " .. tostring(buttonTextFound))
+                
+                if not buttonTextFound then
+                    deletableButtons[traceback] = true
+                end
+            else
+                deletableButtons[traceback] = true
+            end
+        else
+            deletableButtons[traceback] = true
+        end
+    end
+    return deletableButtons        
+end
+]]
+
 
 
 
@@ -322,47 +453,7 @@ SB.removeExistingDeletableSection = function(buttonTablesTab, deletableComment)
     end
 end
 
-SB.checkForDeletableButtons = function ()
-    if SB.checkedForDeletableButtons then
-        return
-    end
-    SB.checkedForDeletableButtons = true
-    
-    local projectTabs = listProjectTabs()
-    local deletableButtons = {}    
-    for traceback, ui in pairs(SB.ui) do
-        local tab, functionName = string.gmatch(traceback, "(%g*),(%g*),")()
-        
-        -- Check if the tab exists
-        local tabExists = false
-        for _, existingTab in ipairs(projectTabs) do
-            if tab == existingTab then
-                tabExists = true
-                break
-            end
-        end
-        
-        if tabExists then
-            local tabCode = readProjectTab(tab)
-            local functionCode = tabCode:match("function%s+" .. functionName .. "%s-%b()")
-            
-            if functionCode then
-                local buttonTextSearch = "SB.button%b()%s-%b{}%s-%b{}%s-\"?%[" .. ui.text
-                    local buttonTextFound = functionCode:find(buttonTextSearch)
-                    
-                    if not buttonTextFound then
-                        deletableButtons[traceback] = true
-                    end
-                else
-                    deletableButtons[traceback] = true
-                end
-            else
-                deletableButtons[traceback] = true
-            end
-        end
-        return deletableButtons        
-    end
-    
+
     
     -- Gets the table with the same trace
     function SB.findTableWithSameTrace(trace, bText)
