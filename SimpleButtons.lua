@@ -51,7 +51,7 @@ end
 
 
 
-SB.createAllButtonDataStrings = function()
+SB.allButtonDataStrings = function()
     local buttonDataStrings = {}
     for traceback, ui in pairs(SB.ui) do
         buttonDataStrings[traceback] = SB.formatButtonDataString(traceback, ui)
@@ -111,28 +111,27 @@ function SB.buttonTextFound(traceback, ui)
     
     return false
 end
-deletableButtonTables
-SB.checkForDeletableButtons = function ()
-    if SB.checkedForDeletableButtons then
+
+SB.deletableButtonTables = function ()
+    if SB.didSearchForDeletables then
         return
     end
-    SB.checkedForDeletableButtons = true
+    SB.didSearchForDeletables = true
     
     local projectTabs = listProjectTabs()
     local uiData = SB.ui
     
-    local buttonsWithNoTabs = SB.findButtonsWithNoTabs(uiData, projectTabs)
-    local buttonsWithNoFunctions = SB.findButtonsWithNoFunctions(uiData)
-    local buttonsWithNoTexts = SB.findButtonsWithNoTexts(uiData)
+    local buttonsWithNoTabs = SB.uiWithNonValidTabs(uiData, projectTabs)
+    local buttonsWithNoFunctions = SB.uiWithNonValidFunctions(uiData)
+    local buttonsWithNoTexts = SB.uiWithNonValidTexts(uiData)
     
     local combinedButtonTable = SB.combineButtonTables(buttonsWithNoTabs, buttonsWithNoFunctions, buttonsWithNoTexts)
     
     return combinedButtonTable
 end
 
-
 -- Function to find buttons with no corresponding tabs
-SB.findButtonsWithNoTabs = function(uiData, projectTabs)
+SB.uiWithNonValidTabs = function(uiData, projectTabs)
     local buttonsWithNoTabs = {}
     for traceback, ui in pairs(uiData) do
         local tab, functionName = string.gmatch(traceback, "(%g*),(%g*),")()
@@ -144,7 +143,7 @@ SB.findButtonsWithNoTabs = function(uiData, projectTabs)
 end
 
 -- Function to find buttons with no corresponding functions in their tabs
-SB.findButtonsWithNoFunctions = function(uiData, projectTabs)
+SB.uiWithNonValidFunctions = function(uiData, projectTabs)
     local buttonsWithNoFunctions = {}
     for traceback, ui in pairs(uiData) do
         local tab, functionName = string.gmatch(traceback, "(%g*),(%g*),")()
@@ -165,10 +164,8 @@ SB.findButtonsWithNoFunctions = function(uiData, projectTabs)
     return buttonsWithNoFunctions
 end
 
-
-
 -- Function to find buttons with no corresponding texts in their functions
-SB.findButtonsWithNoTexts = function(uiData, projectTabs)
+SB.uiWithNonValidTexts = function(uiData, projectTabs)
     local buttonsWithNoTexts = {}
     for traceback, ui in pairs(uiData) do
         local tab, functionName = string.gmatch(traceback, "(%g*),(%g*),")()
@@ -195,11 +192,11 @@ SB.combineButtonTables = function(...)
 end
 
 --[[
-SB.checkForDeletableButtons = function ()
-    if SB.checkedForDeletableButtons then
+SB.deletableButtonTables = function ()
+    if SB.didSearchForDeletables then
         return
     end
-    SB.checkedForDeletableButtons = true
+    SB.didSearchForDeletables = true
     
     local projectTabs = listProjectTabs()
     local deletableButtons = {}    
@@ -529,7 +526,7 @@ end
     function button(bText, action, width, height, fontColor, x, y, specTable, imageAsset, radius)
         if not SB.deletableButtonsChecked then
             SB.deletableButtonsChecked = true
-            SB.deletableButtons = SB.checkForDeletableButtons()
+            SB.deletableButtons = SB.deletableButtonTables()
         end
         
         --get traceback info 
@@ -627,7 +624,7 @@ end
         SB.evaluateTouchFor(trace)
         --set the flag that shows we rendered (used with blurring)
         SB.ui[trace].didRenderAlready = true
-        return SB.ui[trace]
+        return SB.ui[trace], trace
     end
     
     --[[
