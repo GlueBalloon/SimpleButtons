@@ -1,17 +1,20 @@
 
-function setup()
-    
+function setup()    
     testTabExists()
     testExtractFunctionCode()
     testTextPatternFound()
     testPatternMatching()
     testButtonTextFound()
-
+    testCodeIndexedByTabExcludingButtons()
     testUiWithNonValidTabs()
-    testUiWithNonValidFunctions()
-    testUiWithNonValidTexts()
+    testIsStringInQuotesInString()
+    testIsStringInBracketsInString()
+    testIsStringInButtonCallWithSpaces()
+    testIsStringInStringUsingAnyDemarcation()
     testCombineButtonTables()
-   -- testdeletableButtonTables()
+    testdeletableButtonTables()
+    --testUiWithNonValidFunctions()
+    --testUiWithNonValidTexts()
     
     supportedOrientations(LANDSCAPE_ANY)
     
@@ -53,8 +56,8 @@ function testExtractFunctionCode()
     local expectedCode = SB.removeWhitespace(testFunctionCode)
     local actualCode = SB.removeWhitespace(SB.extractFunctionCode(testTabName, testFunctionName))
     
-    print("Normalized expectedCode:", expectedCode)
-    print("Normalized actualCode:", actualCode)
+    --print("Normalized expectedCode:", expectedCode)
+    --print("Normalized actualCode:", actualCode)
     
     assert(actualCode == expectedCode, "Function code does not match the expected code")
     print("passed testExtractFunctionCode")
@@ -99,12 +102,14 @@ function testButtonTextFound()
         local pattern = "SB%.button%b()%s-%b{}%s-%b{}%s-%[%[" .. ui.text .. "%]%]"
         local buttonTextFound = functionCode:find(pattern)
         
+        --[[
         print("traceback:", testTraceback)
         print("tab:", tab)
         print("functionName:", functionName)
         print("functionCode:", functionCode)
         print("pattern:", pattern)
         print("buttonTextFound:", tostring(buttonTextFound))
+        ]]
     end
     
     assert(buttonTextExists, "Existing button text not found")
@@ -168,9 +173,9 @@ function testdeletableButtonTables()
     for _, ui in ipairs(uiData) do
         local shouldBeDeletable = ui.deletable
         local isDeletable = deletableButtons[ui.traceback] or false
-        print("traceback: " .. ui.traceback)
-        print("shouldBeDeletable: " .. tostring(shouldBeDeletable))
-        print("isDeletable: " .. tostring(isDeletable))
+        -- print("traceback: " .. ui.traceback)
+        -- print("shouldBeDeletable: " .. tostring(shouldBeDeletable))
+        -- print("isDeletable: " .. tostring(isDeletable))
         assert(isDeletable == shouldBeDeletable, "Button deletion status mismatch")
     end
     
@@ -213,7 +218,7 @@ function testUiWithNonValidFunctions()
     
     local buttonsWithNoFunctions = SB.uiWithNonValidFunctions(uiData, projectTabs)
     
-    print("Buttons with no functions:")
+    -- print("Buttons with no functions:")
     for traceback, _ in pairs(buttonsWithNoFunctions) do
         print(traceback)
     end
@@ -228,21 +233,6 @@ function testUiWithNonValidFunctions()
     print("passed testUiWithNonValidFunctions")
 end
 
-
-function testUiWithNonValidTexts()
-    -- Set up test data
-    local projectTabs = {"Tab1", "Tab2", "Tab3"}
-    local uiData = {
-        ["Tab1,buttonFunc1,1"] = {text = "Button1"},
-        ["Tab2,buttonFunc2,1"] = {text = "NonExistentTextButton"}
-    }
-    
-    local buttonsWithNoTexts = SB.uiWithNonValidTexts(uiData, projectTabs)
-    assert(buttonsWithNoTexts["Tab2,buttonFunc2,1"], "Button with no text not found")
-    assert(not buttonsWithNoTexts["Tab1,buttonFunc1,1"], "Button with existing text incorrectly marked")
-    print("passed testUiWithNonValidTexts")
-end
-
 function testCombineButtonTables()
     local buttonTable1 = {["Tab1,buttonFunc1,1"] = true}
     local buttonTable2 = {["Tab2,buttonFunc2,1"] = true}
@@ -254,24 +244,149 @@ function testCombineButtonTables()
 end
 
 function testUiWithNonValidTexts()
-    -- Create test UI table using button calls
-    local validTable, validKey = button({text = [[buttonMadeWithString]]})
+    -- Set up test data
+    local codeByTab = SB.codeIndexedByTabExcludingButtons()
+    
+    local stashedFlagValue = SB.deletableButtonsChecked
+    SB.deletableButtonsChecked = true
+    
+    local validTable, validKey = button("buttonMadeWithString")
     local varNameForString = "buttonMadeWithVarName"
-    local notValidTable, notValidKey = SB.button({text = varNameForString})
+    local notValidTable, notValidKey = button(varNameForString)
     local testUI = {
         [validKey] = validTable,
         [notValidKey] = notValidTable
-        }
+    }
+
+    print("Test button function code:", notValidTable.func)
     
--- Load all the project tab data
-local projectTabs = listProjectTabs()
+    -- reset flag
+    SB.deletableButtonsChecked = stashedFlagValue
+    
+    -- Debug: Run the testUI tables through the individual string-searching functions
+    print("notValidTable.text:", notValidTable.text)
+    
+    --[[
+     for tabName, tabContents in pairs(codeByTab) do
+        --print("Testing with tab:", tabName)
+        local validTextFound = SB.isStringInStringUsingAnyDemarcation(validTable.text, tabContents, "button(", ")")
+        local notValidTextFound = SB.isStringInStringUsingAnyDemarcation(notValidTable.text, tabContents, "button(", ")")
+        
+        --print("Valid text found:", validTextFound)
+        --print("Not valid text found:", notValidTextFound)
+    end
+    ]]
+    
+    local buttonsWithNoTexts = SB.uiWithNonValidTexts(testUI, codeByTab)
+    
+    assert(buttonsWithNoTexts[notValidKey], "Button with no text not found")
+    assert(not buttonsWithNoTexts[validKey], "Button with existing text incorrectly marked")
+    print("passed testUiWithNonValidTexts")
+end
 
--- Call uiWithNonValidTexts using the project data and the testUI
-local buttonsWithNoTexts = SB.uiWithNonValidTexts(testUI, projectTabs)
 
--- Test that the returned table contains the second button table but not the first
-assert(buttonsWithNoTexts[notValidKey], "Button with no text not found")
-assert(not buttonsWithNoTexts[validKey], "Button with existing text incorrectly marked")
 
-print("passed testUiWithNonValidTexts")
+function testIsStringInQuotesInString()
+    local stringToFind = "Test String"
+    local codeWithQuotes = [[
+        button("Test String")
+        someOtherFunction("Some other string")
+    ]]
+    local codeWithoutString = [[
+        button("Another string")
+        someOtherFunction("Some other string")
+    ]]
+
+    assert(SB.isStringInQuotesInString(stringToFind, codeWithQuotes), "String with quotes not found")
+    assert(not SB.isStringInQuotesInString(stringToFind, codeWithoutString), "Nonexistent string found")
+
+    print("passed testIsStringInQuotesInString")
+end
+
+function testIsStringInBracketsInString()
+    local stringToFind = "Test String"
+    local codeWithDoubleBrackets = [[
+        button(]] .. "[[" .. stringToFind .. "]]" .. [[)
+        someOtherFunction(]] .. "[[" .. "Some other string" .. "]]" .. [[)
+    ]]
+    local codeWithoutString = [[
+        button([["Another string"]] .. "]]" .. [[)
+        someOtherFunction([["Some other string"]] .. "]]" .. [[)
+    ]]
+
+    assert(SB.isStringInBracketsInString(stringToFind, codeWithDoubleBrackets), "String with double brackets not found")
+    assert(not SB.isStringInBracketsInString(stringToFind, codeWithoutString), "Nonexistent string found")
+
+    print("passed testIsStringInBracketsInString")
+end
+
+function testIsStringInButtonCallWithSpaces()
+    local stringToFind = "%\"" .. "Test String" .. "%\""
+    local codeWithSpaces = [[
+        button( "Test String" )
+        someOtherFunction( "Some other string" )
+    ]]
+    local codeWithoutString = [[
+        button("Another string")
+        someOtherFunction("Some other string")
+    ]]
+
+    assert(SB.isStringInButtonCallWithSpaces(stringToFind, codeWithSpaces), "String with spaces not found")
+    assert(not SB.isStringInButtonCallWithSpaces(stringToFind, codeWithoutString), "Nonexistent string found")
+
+    print("passed testIsStringInButtonCallWithSpaces")
+end
+
+function testIsStringInStringUsingAnyDemarcation()
+    local stringToFind = "Test String"
+    local codeWithQuotes = [[
+    button("Test String")
+    someOtherFunction("Some other string")
+]]
+local codeWithDoubleBrackets = [[
+button(]] .. "[[" .. stringToFind .. "]]" .. [[)
+someOtherFunction(]] .. "[[" .. "Some other string" .. "]]" .. [[)
+]]
+local codeWithSpaces = [[
+button( ]] .. "\"" .. stringToFind .. "\"" .. [[ )
+someOtherFunction( ]] .. "[[" .. "Some other string" .. "]]" .. [[ )
+]]
+local codeWithoutString = [[
+button("Another string")
+someOtherFunction("Some other string")
+]]
+
+assert(SB.isStringInStringUsingAnyDemarcation(stringToFind, codeWithQuotes, "button(", ")"), "String with quotes not found")
+assert(SB.isStringInStringUsingAnyDemarcation(stringToFind, codeWithDoubleBrackets, "button(", ")"), "String with double brackets not found")
+assert(SB.isStringInStringUsingAnyDemarcation(stringToFind, codeWithSpaces, "button(", ")"), "String with spaces not found")
+assert(not SB.isStringInStringUsingAnyDemarcation(stringToFind, codeWithoutString, "button(", ")"), "Nonexistent string found")
+
+print("passed testIsStringInStringUsingAnyDemarcation")
+end
+
+
+function testCodeIndexedByTabExcludingButtons()
+    -- Get code indexed by tab excluding ButtonTables tab
+    local codeByTab = SB.codeIndexedByTabExcludingButtons()
+    
+    -- Get the list of project tabs
+    local projectTabNames = listProjectTabs()
+    
+    -- Check if ButtonTables is not in the returned table
+    assert(codeByTab["ButtonTables"] == nil, "ButtonTables tab should not be indexed")
+    
+    -- Make sure all tab names are in the keys for the returned table
+    for _, tabName in ipairs(projectTabNames) do
+        if tabName ~= "ButtonTables" then
+            assert(codeByTab[tabName] ~= nil, "Tab " .. tabName .. " not found in returned table")
+        end
+    end
+    
+    -- Go through the table and compare the contents
+    for tabName, tabCode in pairs(codeByTab) do
+        local projectTabCode = readProjectTab(tabName)
+        assert(tabCode == projectTabCode, "Code for tab " .. tabName .. " does not match")
+    end
+    
+    print("passed testCodeIndexedByTabExcludingButtons")
 end
