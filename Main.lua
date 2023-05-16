@@ -7,11 +7,11 @@ function setup()
     testButtonTextFound()
     testCodeIndexedByTabExcludingButtons()
     testUiWithNonValidTabs()
+    testUiWithNonValidTexts()
     testIsStringInQuotesInString()
     testIsStringInBracketsInString()
     testIsStringInButtonCallWithSpaces()
-    testIsStringInStringUsingAnyDemarcation()
-    testUiWithNonValidTexts()
+    testHasStringWithAnyDemarcation()
     testCombineButtonTables()
     --testdeletableButtonTables()
     --testUiWithNonValidFunctions()
@@ -187,8 +187,6 @@ function testdeletableButtonTables()
     print("passed testdeletableButtonTables")
 end
 
-
-
 -- Test functions
 function testUiWithNonValidTabs()
     -- Set up test data
@@ -243,40 +241,6 @@ function testCombineButtonTables()
     print("passed testCombineButtonTables")
 end
 
-function generateTestUI()
-    local codeByTab = SB.codeIndexedByTabExcludingButtons()
-    local validTable, validKey = button("buttonMadeWithString")
-    local varNameForString = "buttonMadeWithVarName"
-    local notValidTable, notValidKey = button(varNameForString)
-    local testUI = {
-        [validKey] = validTable,
-        [notValidKey] = notValidTable
-    }
-    return testUI, codeByTab, validKey, notValidKey
-end
-
-function testUiWithNonValidTexts()
-    -- Set up test data
-    local testUI, codeByTab, validKey, notValidKey = generateTestUI()
-    
-    local stashedFlagValue = SB.deletableButtonsChecked
-    SB.deletableButtonsChecked = true
-    
-    -- reset flag
-    SB.deletableButtonsChecked = stashedFlagValue
-    
-    print("Code for validKey:", codeByTab[validKey])
-    print("Code for notValidKey:", codeByTab[notValidKey])
-    
-    local buttonsWithNoTexts = SB.uiWithNonValidTexts(testUI, codeByTab)
-    
-    assert(buttonsWithNoTexts[notValidKey], "Button with no text not found")
-    assert(not buttonsWithNoTexts[validKey], "Button with existing text incorrectly marked")
-    print("passed testUiWithNonValidTexts")
-end
-
-
-
 function testIsStringInQuotesInString()
     local stringToFind = "Test String"
     local codeWithQuotes = [[
@@ -328,36 +292,6 @@ function testIsStringInButtonCallWithSpaces()
     print("passed testIsStringInButtonCallWithSpaces")
 end
 
-function testIsStringInStringUsingAnyDemarcation()
-    local stringToFind = "Test String"
-    local codeWithQuotes = [[
-    button("Test String")
-    someOtherFunction("Some other string")
-]]
-local codeWithDoubleBrackets = [[
-button(]] .. "[[" .. stringToFind .. "]]" .. [[)
-someOtherFunction(]] .. "[[" .. "Some other string" .. "]]" .. [[)
-]]
-local codeWithSpaces = [[
-button( ]] .. "\"" .. stringToFind .. "\"" .. [[ )
-someOtherFunction( ]] .. "[[" .. "Some other string" .. "]]" .. [[ )
-]]
-local codeWithoutString = [[
-button("Another string")
-someOtherFunction("Some other string")
-]]
-
-assert(SB.isStringInStringUsingAnyDemarcation(stringToFind, codeWithQuotes, "button(", ")"), "String with quotes not found")
-assert(SB.isStringInStringUsingAnyDemarcation(stringToFind, codeWithDoubleBrackets, "button(", ")"), "String with double brackets not found")
-assert(SB.isStringInStringUsingAnyDemarcation(stringToFind, codeWithSpaces, "button(", ")"), "String with spaces not found")
-assert(not SB.isStringInStringUsingAnyDemarcation(stringToFind, codeWithoutString, "button(", ")"), "Nonexistent string found")
-print("codeWithQuotes:", codeWithQuotes)
-print("codeWithDoubleBrackets:", codeWithDoubleBrackets)
-print("codeWithSpaces:", codeWithSpaces)
-print("codeWithoutString:", codeWithoutString)
-print("passed testIsStringInStringUsingAnyDemarcation")
-end
-
 
 function testCodeIndexedByTabExcludingButtons()
     -- Get code indexed by tab excluding ButtonTables tab
@@ -386,7 +320,10 @@ function testCodeIndexedByTabExcludingButtons()
 end
 
 function generateTestUI()
-
+    
+    local stashedFlagValue = SB.deletableButtonsChecked
+    SB.deletableButtonsChecked = true
+        
     local testUI = {}
     local variableInsteadOfLiteral = 
         "variableInsteadOfLiteral"
@@ -406,39 +343,43 @@ function generateTestUI()
     local spacesTable, spacesKey = 
         button(  "Test Spaces String"  )
     someOtherFunction(  "Some other string"   )
-    testUI[spacesTable] = spacesKey
+    testUI[spacesKey] = spacesTable
     
     local wrongStringTable, wrongStringKey =
         button("Wrong string")
     someOtherFunction("Some other string")
-    testUI[wrongStringTable] = wrongStringKey
+    testUI[wrongStringKey] = wrongStringTable
     
     local invalidTable, invalidKey =
         button(variableInsteadOfLiteral)
     someOtherFunction("Some other string")
-    testUI[invalidTable] = invalidKey
+    testUI[invalidKey] = invalidTable
+    
+    SB.deletableButtonsChecked = stashedFlagValue
     
     return testUI
 end
 
-function testIsStringInStringUsingAnyDemarcation()
+function testHasStringWithAnyDemarcation()
     local testUI = generateTestUI()
     local codeByTab = SB.codeIndexedByTabExcludingButtons()
     local fullCode = table.concat(codeByTab)
     
     for trace, tableValue in pairs(testUI) do
         local stringToFind = tableValue.text
-        assert(SB.isStringInStringUsingAnyDemarcation(stringToFind, fullCode, "button(", ")"),
+        assert(SB.hasStringWithAnyDemarcation(stringToFind, fullCode, "button(", ")"),
         "String " .. stringToFind .. " not found")
     end
     
-    print("passed testIsStringInStringUsingAnyDemarcation")
+    print("passed testHasStringWithAnyDemarcation")
 end
 
 function testUiWithNonValidTexts()
     local testUI = generateTestUI()
-    local codeByTab = codeIndexedByTabExcludingButtons()
-    
+    local codeByTab = SB.codeIndexedByTabExcludingButtons()
+    for k, v in pairs(codeByTab) do
+        print(k, v == nil)
+    end
     local buttonsWithNoTexts = SB.uiWithNonValidTexts(testUI, codeByTab)
     
     for trace, tableValue in pairs(testUI) do

@@ -180,11 +180,24 @@ end
 -- Function to find buttons with no corresponding texts in their functions
 function SB.uiWithNonValidTexts(uiData, projectTabs)
     local buttonsWithNoTexts = {}
+    local count = 0
+    for k, v in pairs(projectTabs) do
+        print("projectTabs "..count, k, v == nil)
+        count = count + 1
+    end
+    print(count)
+    count = 0
+    for k, v in pairs(uiData) do
+        print("uiData "..count, k, v == nil)
+        count = count + 1
+    end
+    print(count)
     for k, buttonTable in pairs(uiData) do
         local buttonText = buttonTable.text
         local textFound = false
         for tabName, code in pairs(projectTabs) do
-            local isInCode = SB.isStringInStringUsingAnyDemarcation(buttonText, code, "button(", ")")
+            print(tabName, k, buttonText)
+            local isInCode = SB.hasStringWithAnyDemarcation(buttonText, code, "button(", ")")
             -- print("Testing with tab:", tabName) -- Add this print statement
             -- print("Is in code:", isInCode) -- Add this print statement
             if isInCode then
@@ -228,7 +241,7 @@ SB.isStringInButtonCallWithSpaces = function(stringToFind, stringToSearch)
 end
 
 -- Function to check if the given string exists in the target string with any demarcation
-SB.isStringInStringUsingAnyDemarcation = function(stringToFind, stringToSearch, precedingText, terminatingText)
+SB.hasStringWithAnyDemarcation = function(stringToFind, stringToSearch, precedingText, terminatingText)
     return SB.isStringInQuotesInString(stringToFind, stringToSearch, precedingText, terminatingText)
     or SB.isStringInBracketsInString(stringToFind, stringToSearch, precedingText, terminatingText)
     or SB.isStringInButtonCallWithSpaces(stringToFind, stringToSearch, precedingText, terminatingText)
