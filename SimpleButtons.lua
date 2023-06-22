@@ -48,14 +48,80 @@ SB.isBeingRunAsDependency = function()
     end
 end
 
+SB.tablesMatchedAndNotByText = function(uiTables, code)
+    local matchedTexts = {}
+    local notMatchedTexts = {}
+    
+    for _, table in ipairs(uiTables) do
+        if SB.hasStringWithAnyDemarcation(table.text, code, 'button(', ')') then
+            matchedTexts[#matchedTexts + 1] = table
+        else
+            notMatchedTexts[#notMatchedTexts + 1] = table
+        end
+    end
+    
+    return matchedTexts, notMatchedTexts
+end
+
+SB.appendUiTablesTo = function(targetString, uiTables)
+    for _, entry in ipairs(uiTables) do
+        targetString = targetString .. SB.formatButtonDataString(entry.traceback, entry.ui)
+    end
+    return targetString
+end
+
+SB.appendSectionHeadingTo = function(targetString, headingText)
+    return targetString .. "-- " .. headingText .. " --\n\n"
+end
+
+
+SB.tablesWithUniqueTexts = function(inputUI)
+    local uniqueButtonTextTables = {}
+    local duplicateButtonTextTables = {}
+    local buttonTextCounts = {}
+    
+    -- Count the occurrences of each button text
+    for _, buttonTable in ipairs(inputUI) do
+        local buttonText = buttonTable.text
+        if buttonTextCounts[buttonText] then
+            buttonTextCounts[buttonText] = buttonTextCounts[buttonText] + 1
+        else
+            buttonTextCounts[buttonText] = 1
+        end
+    end
+    
+    -- Separate the inputUI into unique and duplicate tables
+    for _, buttonTable in ipairs(inputUI) do
+        local buttonText = buttonTable.text
+        if buttonTextCounts[buttonText] > 1 then
+            table.insert(duplicateButtonTextTables, buttonTable)
+        else
+            table.insert(uniqueButtonTextTables, buttonTable)
+        end
+    end
+    
+    return uniqueButtonTextTables, duplicateButtonTextTables
+end
+
+SB.allCodeExcludingButtonsAndBackup = function()
+    local projectTabNames = listProjectTabs()
+    local combinedCode = ""
+    for _, tabName in ipairs(projectTabNames) do
+        if tabName ~= "ButtonTables" and 
+            tabName ~= "BackupTables" then
+            combinedCode = combinedCode .. readProjectTab(tabName)
+        end
+    end
+    return combinedCode
+end
 
 -- Function to create a table of tab contents indexed by tab names, excluding the ButtonTables tab
 SB.codeIndexedByTabExcludingButtons = function()
     local projectTabNames = listProjectTabs()
     local codeByTab = {}
-    
     for _, tabName in ipairs(projectTabNames) do
-        if tabName ~= "ButtonTables" then
+        if tabName ~= "ButtonTables" and
+            tabName ~= "BackupTables" then
             codeByTab[tabName] = readProjectTab(tabName)
         end
     end
@@ -153,7 +219,6 @@ SB.uiWithNonValidTabs = function(uiData, projectTabs)
     return buttonsWithNoTabs
 end
 
--- Function to find buttons with no corresponding functions in their tabs
 SB.uiWithNonValidFunctions = function(uiData, projectTabs)
     local buttonsWithNoFunctions = {}
     for traceback, ui in pairs(uiData) do
@@ -161,18 +226,11 @@ SB.uiWithNonValidFunctions = function(uiData, projectTabs)
         local tabExists = SB.tabExists(tab, projectTabs)
         
         if tabExists then
-            local status, functionCode = pcall(SB.extractFunctionCode, tab, functionName)
-            if not status then
+            local functionCode = SB.extractFunctionCode(tab, functionName)
+            if not functionCode then
                 buttonsWithNoFunctions[traceback] = true
             end
         end
-        --[[
-        print("traceback: " .. traceback)
-        print("tab: " .. tab)
-        print("functionName: " .. functionName)
-        print("tabExists: " .. tostring(tabExists))
-        print("functionCode: " .. tostring(functionCode))
-        ]]
     end
     return buttonsWithNoFunctions
 end
@@ -180,23 +238,10 @@ end
 -- Function to find buttons with no corresponding texts in their functions
 function SB.uiWithNonValidTexts(uiData, projectTabs)
     local buttonsWithNoTexts = {}
-    local count = 0
-    for k, v in pairs(projectTabs) do
-        print("projectTabs "..count, k, v == nil)
-        count = count + 1
-    end
-    print(count)
-    count = 0
-    for k, v in pairs(uiData) do
-        print("uiData "..count, k, v == nil)
-        count = count + 1
-    end
-    print(count)
     for k, buttonTable in pairs(uiData) do
         local buttonText = buttonTable.text
         local textFound = false
         for tabName, code in pairs(projectTabs) do
-            print(tabName, k, buttonText)
             local isInCode = SB.hasStringWithAnyDemarcation(buttonText, code, "button(", ")")
             -- print("Testing with tab:", tabName) -- Add this print statement
             -- print("Is in code:", isInCode) -- Add this print statement
@@ -471,14 +516,6 @@ SB.evaluateDrag = function (traceback, touch)
     end
 end
 
-SB.formatButtonDataString = function (traceback, ui)
-    return "SB.ui[ [[" .. traceback .. "]] ] = \n" ..
-    "    {text = [[" .. ui.text .. "]],\n" ..
-    "    x = " .. ui.x .. ", y = " .. ui.y .. ",\n" ..
-    "    width = " .. (ui.width or "nil") .. ", height = " .. (ui.height or "nil") .. ",\n" ..
-    "    action = SB.defaultButtonAction\n}\n\n"
-end
-
 SB.writeDeletableButtons = function (dataString, deletableDataString, deletableComment)
     local buttonTablesTab = readProjectTab("ButtonTables")
     local commentStart, commentEnd = buttonTablesTab:find(deletableComment)
@@ -492,24 +529,47 @@ SB.writeDeletableButtons = function (dataString, deletableDataString, deletableC
     end
 end
 
-SB.savePositions = function ()
-    local dataString = ""
-    local deletableDataString = ""
-    local deletableComment = "--BUTTONS NOT FOUND IN SOURCE CODE, MAY BE DELETABLE:"
-    
-    for traceback, ui in pairs(SB.ui) do
-        local buttonData = SB.formatButtonDataString(traceback, ui)
-        
-        if SB.deletableButtons[traceback] then
-            deletableDataString = deletableDataString .. buttonData
-        else
-            dataString = dataString .. buttonData
-        end
-    end
-    
-    local combinedDataString = SB.writeDeletableButtons(dataString, deletableDataString, deletableComment)
-    saveProjectTab("ButtonTables", combinedDataString)
+SB.formatButtonDataString = function (traceback, ui)
+    return "SB.ui[ [[" .. traceback .. "]] ] = \n" ..
+    "    {text = [[" .. ui.text .. "]],\n" ..
+    "    x = " .. ui.x .. ", y = " .. ui.y .. ",\n" ..
+    "    width = " .. (ui.width or "nil") .. ", height = " .. (ui.height or "nil") .. ",\n" ..
+    "    action = SB.defaultButtonAction\n}\n\n"
 end
+
+SB.savePositions = function()
+-- Step 1: Get all code excluding ButtonTables and BackupTables
+local allCode = SB.allCodeExcludingButtonsAndBackup()
+
+-- Step 2: Get matched and not-matched texts
+local matchedTexts, notMatchedTexts = SB.tablesMatchedAndNotByText(SB.ui, allCode)
+
+-- Step 3: Separate the matched texts into uniques and duplicates
+local uniques, duplicates = SB.tablesWithUniqueTexts(matchedTexts)
+
+-- Step 4: Initialize an empty string to store the button tables
+local buttonTablesString = ""
+
+-- Step 5: Add the unique UI tables to the button tables string
+buttonTablesString = SB.appendUiTablesTo(buttonTablesString, uniques)
+
+-- Step 6: Add a section heading for the duplicates
+buttonTablesString = SB.appendSectionHeadingTo(buttonTablesString, "-- DUPLICATE BUTTONS:")
+
+-- Step 7: Add the duplicate UI tables to the button tables string
+buttonTablesString = SB.appendUiTablesTo(buttonTablesString, duplicates)
+
+-- Step 8: Add a section heading for the not found texts
+buttonTablesString = SB.appendSectionHeadingTo(buttonTablesString, "-- BUTTONS NOT FOUND IN SOURCE CODE:")
+
+-- Step 9: Add the not found texts to the button tables string
+buttonTablesString = SB.appendUiTablesTo(buttonTablesString, notMatchedTexts)
+
+-- Step 10: Save the button tables string to the ButtonTables tab
+saveProjectTab("ButtonTables", buttonTablesString)
+end
+
+
 
 SB.removeExistingDeletableSection = function(buttonTablesTab, deletableComment)
     local commentStart, commentEnd = buttonTablesTab:find(deletableComment)
@@ -597,7 +657,7 @@ end
 function button(bText, action, width, height, fontColor, x, y, specTable, imageAsset, radius)
     if not SB.deletableButtonsChecked then
         SB.deletableButtonsChecked = true
-        SB.deletableButtons = SB.deletableButtonTables()
+       -- SB.deletableButtons = SB.deletableButtonTables()
     end
     
     --get traceback info 

@@ -11,11 +11,13 @@
 		<string>positioningDemo</string>
 		<string>note</string>
 		<string>SimpleButtons</string>
-		<string>Backup</string>
 		<string>ButtonTables</string>
+		<string>BackupTables</string>
 		<string>Experimental</string>
 		<string>SupportedOrientation </string>
 		<string>TestTab</string>
+		<string>Tab2</string>
+		<string>Tab1</string>
 	</array>
 </dict>
 </plist>
