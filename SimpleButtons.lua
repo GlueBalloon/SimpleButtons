@@ -48,7 +48,7 @@ SB.isBeingRunAsDependency = function()
     end
 end
 
-SB.tablesMatchedAndNotByText = function(uiTables, code)
+SB.tablesWithTextsFoundAndNot = function(uiTables, code)
     local matchedTexts = {}
     local notMatchedTexts = {}
     
@@ -95,13 +95,17 @@ SB.tablesWithUniqueTexts = function(inputUI)
         local buttonText = buttonTable.text
         if buttonTextCounts[buttonText] > 1 then
             table.insert(duplicateButtonTextTables, buttonTable)
+            print("Adding table with text '" .. buttonText .. "' to duplicateTables")
         else
             table.insert(uniqueButtonTextTables, buttonTable)
+            print("Adding table with text '" .. buttonText .. "' to uniqueTables")
         end
     end
     
+    print("returning tables with counts:\n #uniqueButtonTextTables, #duplicateButtonTextTables: ", #uniqueButtonTextTables, ", ", #duplicateButtonTextTables)
     return uniqueButtonTextTables, duplicateButtonTextTables
 end
+
 
 SB.allCodeExcludingButtonsAndBackup = function()
     local projectTabNames = listProjectTabs()
@@ -537,37 +541,54 @@ SB.formatButtonDataString = function (traceback, ui)
     "    action = SB.defaultButtonAction\n}\n\n"
 end
 
-SB.savePositions = function()
--- Step 1: Get all code excluding ButtonTables and BackupTables
-local allCode = SB.allCodeExcludingButtonsAndBackup()
-
--- Step 2: Get matched and not-matched texts
-local matchedTexts, notMatchedTexts = SB.tablesMatchedAndNotByText(SB.ui, allCode)
-
--- Step 3: Separate the matched texts into uniques and duplicates
-local uniques, duplicates = SB.tablesWithUniqueTexts(matchedTexts)
-
--- Step 4: Initialize an empty string to store the button tables
-local buttonTablesString = ""
-
--- Step 5: Add the unique UI tables to the button tables string
-buttonTablesString = SB.appendUiTablesTo(buttonTablesString, uniques)
-
--- Step 6: Add a section heading for the duplicates
-buttonTablesString = SB.appendSectionHeadingTo(buttonTablesString, "-- DUPLICATE BUTTONS:")
-
--- Step 7: Add the duplicate UI tables to the button tables string
-buttonTablesString = SB.appendUiTablesTo(buttonTablesString, duplicates)
-
--- Step 8: Add a section heading for the not found texts
-buttonTablesString = SB.appendSectionHeadingTo(buttonTablesString, "-- BUTTONS NOT FOUND IN SOURCE CODE:")
-
--- Step 9: Add the not found texts to the button tables string
-buttonTablesString = SB.appendUiTablesTo(buttonTablesString, notMatchedTexts)
-
--- Step 10: Save the button tables string to the ButtonTables tab
-saveProjectTab("ButtonTables", buttonTablesString)
+function SB.sortUITables(uiTables, code)
+    -- Get matched and not-matched texts
+    local matchedTexts, notMatchedTexts = SB.tablesWithTextsFoundAndNot(uiTables, code)
+    
+    -- Separate the matched texts into uniques and duplicates
+    local uniques, duplicates = SB.tablesWithUniqueTexts(matchedTexts)
+    
+    return uniques, duplicates, notMatchedTexts
 end
+
+
+SB.savePositions = function()
+    -- Step 1: Get all code excluding ButtonTables and BackupTables
+    local allCode = SB.allCodeExcludingButtonsAndBackup()
+    
+    -- Step 2: Get matched and not-matched texts
+    local matchedTexts, notMatchedTexts = SB.tablesWithTextsFoundAndNot(SB.ui, allCode)
+    
+    -- Step 3: Separate the matched texts into uniques and duplicates
+    local uniques, duplicates = SB.tablesWithUniqueTexts(matchedTexts)
+    print("#uniques, #duplicates:\n", #uniques, ", ", #duplicates)
+    
+    -- Step 4: Initialize an empty string to store the button tables
+    local buttonTablesString = ""
+    
+    -- Step 5: Add the unique UI tables to the button tables string
+    buttonTablesString = SB.appendUiTablesTo(buttonTablesString, uniques)
+    print("After appending uniques:\n" .. buttonTablesString)
+    
+    -- Step 6: Add a section heading for the duplicates
+    buttonTablesString = SB.appendSectionHeadingTo(buttonTablesString, "-- DUPLICATE BUTTONS:")
+    
+    -- Step 7: Add the duplicate UI tables to the button tables string
+    buttonTablesString = SB.appendUiTablesTo(buttonTablesString, duplicates)
+    print("After appending duplicates:\n" .. buttonTablesString)
+    
+    -- Step 8: Add a section heading for the not found texts
+    buttonTablesString = SB.appendSectionHeadingTo(buttonTablesString, "-- BUTTONS NOT FOUND IN SOURCE CODE:")
+    
+    -- Step 9: Add the not found texts to the button tables string
+    buttonTablesString = SB.appendUiTablesTo(buttonTablesString, notMatchedTexts)
+    print("After appending not found texts:\n" .. buttonTablesString)
+    
+    -- Step 10: Save the button tables string to the ButtonTables tab
+    saveProjectTab("ButtonTables", buttonTablesString)
+end
+
+
 
 
 

@@ -1,12 +1,19 @@
 
 function setup() 
+    --[[
     testTablesWithUniqueTexts()
+    
     testMatchTableCounts()
     testMatchTableContents()
     testAppendUiTablesTo()
     testAppendSectionHeadingTo()
     testSaveUniqueButtonTables()
     testGetTextValues()
+    
+    ]]
+    testSortUITables()
+    
+    
     --[[
     testUiWithNonValidTexts()
     
@@ -80,6 +87,16 @@ end
 return textValues
 end
 
+-- Function to get the text values from the UI tables
+function getTextValuesFromUITables(uiTables)
+    local textValues = {}
+    for _, table in ipairs(uiTables) do
+        textValues[#textValues + 1] = table.text
+    end
+    return textValues
+end
+
+
 
 
 
@@ -95,15 +112,17 @@ function testTablesWithUniqueTexts()
     local uniqueButtonTextTables, duplicateButtonTextTables = SB.tablesWithUniqueTexts(inputUI)
     
     -- Check the results
-    assert(#uniqueButtonTextTables == 1, "Expected one unique button text table")
+    assert(#uniqueButtonTextTables == 1, "Expected one unique button text table, got "..#uniqueButtonTextTables)
     assert(uniqueButtonTextTables[1].text == "World", "Expected unique button text to be 'World'")
     
     assert(#duplicateButtonTextTables == 2, "Expected two duplicate button text tables")
     assert(duplicateButtonTextTables[1].text == "Hello", "Expected duplicate button text to be 'Hello'")
     assert(duplicateButtonTextTables[2].text == "Hello", "Expected duplicate button text to be 'Hello'")
     
-    print("passed testSplitUIByButtonText")
+    print("passed testTablesWithUniqueTexts")
 end
+
+
 
 local function generateTestData(numUnique, numDuplicates, numNotMatched)
     local inputUI = {}
@@ -116,6 +135,7 @@ local function generateTestData(numUnique, numDuplicates, numNotMatched)
         local text = "Unique " .. i
         inputUI[#inputUI + 1] = { text = text }
         testCode = testCode .. 'SB.button({text = [[' .. text .. ']]})\n'
+        print("Generating unique table with text: " .. text)
     end
     
     -- Generate duplicate tables and matching code
@@ -124,6 +144,7 @@ local function generateTestData(numUnique, numDuplicates, numNotMatched)
         inputUI[#inputUI + 1] = { text = text }
         if i == 1 then
             testCode = testCode .. 'SB.button({text = [[' .. text .. ']]})\n'
+            print("Generating duplicate table with text: " .. text)
         end
     end
     
@@ -131,6 +152,7 @@ local function generateTestData(numUnique, numDuplicates, numNotMatched)
     for i = 1, numNotMatched do
         local text = "Not Matched " .. i
         inputUI[#inputUI + 1] = { text = text }
+        print("Generating not matched table with text: " .. text)
     end
     
     testCode = testCode .. 'end\n'
@@ -148,7 +170,7 @@ function testMatchTableCounts()
     local inputUI, testCode, expectedDuplicates, expectedUniques = generateTestData(numUnique, numDuplicates, numNotMatched)
     
     -- Call the function
-    local matchedTexts, notMatchedTexts = SB.tablesMatchedAndNotByText(inputUI, testCode)
+    local matchedTexts, notMatchedTexts = SB.tablesWithTextsFoundAndNot(inputUI, testCode)
     
     -- Check the results
     assert(#matchedTexts == expectedDuplicates + expectedUniques, "Expected " .. (expectedDuplicates + expectedUniques) .. " matched button text tables")
@@ -166,7 +188,7 @@ function testMatchTableContents()
     local inputUI, testCode, expectedDuplicates, expectedUniques = generateTestData(numUnique, numDuplicates, numNotMatched)
     
     -- Call the function
-    local matchedTexts, notMatchedTexts = SB.tablesMatchedAndNotByText(inputUI, testCode)
+    local matchedTexts, notMatchedTexts = SB.tablesWithTextsFoundAndNot(inputUI, testCode)
     
     -- Create lookup tables for easy checking
     local matchedTextsLookup, notMatchedTextsLookup = {}, {}
@@ -237,29 +259,85 @@ function testAppendSectionHeadingTo()
     print("Passed testAppendSectionHeadingTo")
 end
 
+function testSortUITables()
+    -- Setup
+    math.randomseed(os.time()) -- for generating different numbers each time
+    local numUnique = math.random(1, 5) -- assuming a range from 1 to 5
+    local numDuplicates = math.random(1, 5)
+    local numNotMatched = math.random(1, 5)
+    local inputUI, testCode = generateTestData(numUnique, numDuplicates, numNotMatched)
+    
+    -- Call the function to test
+    local uniqueUITables, duplicateUITables, notMatchedUITables = SB.sortUITables(inputUI, testCode)
+    
+    -- Check the lengths of the returned tables
+    assert(#uniqueUITables == numUnique, "Expected " .. numUnique .. " unique tables, got " .. #uniqueUITables)
+    assert(#duplicateUITables == numDuplicates, "Expected " .. numDuplicates .. " duplicate tables, got " .. #duplicateUITables)
+    assert(#notMatchedUITables == numNotMatched, "Expected " .. numNotMatched .. " not matched tables, got " .. #notMatchedUITables)
+    
+    -- Check the contents of the unique tables
+    for i, table in ipairs(uniqueUITables) do
+        assert(table.text == "Unique " .. i, "Expected unique table with text 'Unique " .. i .. "', got '" .. table.text .. "'")
+    end
+    
+    -- Check the contents of the duplicate tables
+    for _, table in ipairs(duplicateUITables) do
+        assert(table.text == "Duplicate", "Expected duplicate table with text 'Duplicate', got '" .. table.text .. "'")
+    end
+    
+    -- Check the contents of the not matched tables
+    for i, table in ipairs(notMatchedUITables) do
+        assert(table.text == "Not Matched " .. i, "Expected not matched table with text 'Not Matched " .. i .. "', got '" .. table.text .. "'")
+    end
+    
+    print("Passed testSortUITables")
+end
+
+
 function testSaveUniqueButtonTables()
 
     -- Setup
     local numUnique, numDuplicates, numNotMatched = 3, 2, 2
-    local inputUI, testCode, uniqueTexts = generateTestData(numUnique, numDuplicates, numNotMatched)
-    local matchedTexts, notMatchedTexts = SB.tablesMatchedAndNotByText(inputUI, testCode)
+    local inputUI, testCode = generateTestData(numUnique, numDuplicates, numNotMatched)
+    local uniqueUITables = SB.tablesWithUniqueTexts(inputUI)
+    local uniqueTextValues = getTextValuesFromUITables(uniqueUITables)
+
+    local matchedTexts, notMatchedTexts = SB.tablesWithTextsFoundAndNot(inputUI, testCode)
     local oldButtonTablesContent = readProjectTab("ButtonTables")
+
+    
+    -- Monkey patch allCodeExcludingButtonsAndBackup to include dynamically-generated texts
+    local originalAllCodeExcludingButtonsAndBackup = SB.allCodeExcludingButtonsAndBackup
+    SB.allCodeExcludingButtonsAndBackup = function()
+        return testCode
+    end
     
     -- Save uniques
-    SB.savePositions(matchedTexts, notMatchedTexts)
+    SB.savePositions()
     
     -- Get the new ButtonTables content
     local newButtonTablesContent = readProjectTab("ButtonTables")
+   -- print("newButtonTablesContent: \n" .. newButtonTablesContent)
+    
+    -- Clean up: restore the old content and undo monkey-patch
+    saveProjectTab("ButtonTables", oldButtonTablesContent)
+    SB.allCodeExcludingButtonsAndBackup = originalAllCodeExcludingButtonsAndBackup
     
     -- Parse the new ButtonTables content to get the text values
     local foundTexts = getTextValues(newButtonTablesContent)
+    print("foundTexts: ")
+    for i, text in ipairs(foundTexts) do
+        print(i .. ": " .. text)
+    end
     
-    -- Clean up: restore the old ButtonTables content
-    saveProjectTab("ButtonTables", oldButtonTablesContent)
+
     
     -- Check that the first numUnique found texts match all the unique texts
     for i = 1, numUnique do
-        assert(tableContains(uniqueTexts, foundTexts[i]), "Expected to find unique text in the first part of found texts")
+        if foundTexts[i] == nil then
+            assert(false, "foundTexts["..i.."] is nil")
+        end
+        assert(tableContains(uniqueTextValues, foundTexts[i]), "Expected to find unique text '"..foundTexts[i].."' in the first part of found texts")
     end
     
     -- Check that the unique texts don't appear in the rest of the found texts
