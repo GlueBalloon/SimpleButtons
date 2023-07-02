@@ -65,7 +65,7 @@ end
 
 SB.appendUiTablesTo = function(targetString, uiTables)
     for _, entry in ipairs(uiTables) do
-        targetString = targetString .. SB.formatButtonDataString(entry.traceback, entry.ui)
+        targetString = targetString .. SB.formatButtonDataString(entry.traceback, entry)
     end
     return targetString
 end
@@ -95,10 +95,10 @@ SB.tablesWithUniqueTexts = function(inputUI)
         local buttonText = buttonTable.text
         if buttonTextCounts[buttonText] > 1 then
             table.insert(duplicateButtonTextTables, buttonTable)
-            print("Adding table with text '" .. buttonText .. "' to duplicateTables")
+           -- print("Adding table with text '" .. buttonText .. "' to duplicateTables")
         else
             table.insert(uniqueButtonTextTables, buttonTable)
-            print("Adding table with text '" .. buttonText .. "' to uniqueTables")
+           -- print("Adding table with text '" .. buttonText .. "' to uniqueTables")
         end
     end
     
@@ -384,11 +384,13 @@ parameter.boolean("snap_to_grid", false, function()
     SB.useGrid = snap_to_grid
 end)
 
+SB.addTableWithText = function(bText, traceback)
+    SB.ui[traceback] = SB.defaultButton(bText)
+end
 
-SB.defaultButton = function(bText, traceback)
-    SB.ui[traceback] = {text=bText,
+SB.defaultButton = function(bText)
+    return {text=bText,
     x=0.5, y=0.5, action=SB.defaultButtonAction}
-    return SB.ui[traceback]
 end
 
 
@@ -551,18 +553,18 @@ function SB.sortUITables(uiTables, code)
     return uniques, duplicates, notMatchedTexts
 end
 
+SB.stringForButtonTablesTab = function(uniques, duplicates, notMatched)
+    local buttonTablesString = ""
+    buttonTablesString = SB.appendUiTablesTo(buttonTablesString, duplicates)
+    return buttonTablesString
+end
+
 
 SB.savePositions = function()
-    -- Step 1: Get all code excluding ButtonTables and BackupTables
+
     local allCode = SB.allCodeExcludingButtonsAndBackup()
-    
-    -- Step 2: Get matched and not-matched texts
-    local matchedTexts, notMatchedTexts = SB.tablesWithTextsFoundAndNot(SB.ui, allCode)
-    
-    -- Step 3: Separate the matched texts into uniques and duplicates
-    local uniques, duplicates = SB.tablesWithUniqueTexts(matchedTexts)
-    print("#uniques, #duplicates:\n", #uniques, ", ", #duplicates)
-    
+    local uniques, duplicates, notMatched = SB.sortUITables(SB.ui, allCode)
+
     -- Step 4: Initialize an empty string to store the button tables
     local buttonTablesString = ""
     
@@ -581,7 +583,7 @@ SB.savePositions = function()
     buttonTablesString = SB.appendSectionHeadingTo(buttonTablesString, "-- BUTTONS NOT FOUND IN SOURCE CODE:")
     
     -- Step 9: Add the not found texts to the button tables string
-    buttonTablesString = SB.appendUiTablesTo(buttonTablesString, notMatchedTexts)
+    buttonTablesString = SB.appendUiTablesTo(buttonTablesString, notMatched)
     print("After appending not found texts:\n" .. buttonTablesString)
     
     -- Step 10: Save the button tables string to the ButtonTables tab
@@ -687,8 +689,8 @@ function button(bText, action, width, height, fontColor, x, y, specTable, imageA
     local trace = debug.traceback()
     local tableToDraw = SB.findTableToDraw(trace, bText)
     --if there's not a tableToDraw, make a new one
-    if not tableToDraw or tableToDraw.text ~= bText then
-        tableToDraw = SB.defaultButton(bText, trace)
+    if not tableToDraw or tableToDraw.text ~= bText then     
+        tableToDraw = SB.addTableWithText(bText, traceback)
     end
     tableToDraw.specTable = specTable
     --if x and y were explicitly stated, they should be ordinary numbers
