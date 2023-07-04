@@ -52,7 +52,7 @@ SB.tablesWithTextsFoundAndNot = function(uiTables, code)
     local matchedTexts = {}
     local notMatchedTexts = {}
     
-    for _, table in ipairs(uiTables) do
+    for _, table in pairs(uiTables) do
         if SB.hasStringWithAnyDemarcation(table.text, code, 'button(', ')') then
             matchedTexts[#matchedTexts + 1] = table
         else
@@ -60,8 +60,17 @@ SB.tablesWithTextsFoundAndNot = function(uiTables, code)
         end
     end
     
+    --[[
+    print("matchedTexts content:")
+    printTable(matchedTexts)
+    
+    print("notMatchedTexts content:")
+    printTable(notMatchedTexts)
+    ]]
+    
     return matchedTexts, notMatchedTexts
 end
+
 
 SB.appendUiTablesTo = function(targetString, uiTables)
     for traceback, entry in pairs(uiTables) do
@@ -74,6 +83,18 @@ SB.appendSectionHeadingTo = function(targetString, headingText)
     return targetString .. "-- " .. headingText .. " --\n\n"
 end
 
+function printTable(t, indent)
+    indent = indent or "  "
+    for k, v in pairs(t) do
+        if type(v) == "table" then
+            print(indent .. k .. ":")
+            printTable(v, indent .. "  ")
+        else
+            print(indent .. k .. ": " .. tostring(v))
+        end
+    end
+end
+
 
 SB.tablesWithUniqueTexts = function(inputUI)
     local uniqueButtonTextTables = {}
@@ -81,7 +102,7 @@ SB.tablesWithUniqueTexts = function(inputUI)
     local buttonTextCounts = {}
     
     -- Count the occurrences of each button text
-    for _, buttonTable in ipairs(inputUI) do
+    for _, buttonTable in pairs(inputUI) do
         local buttonText = buttonTable.text
         if buttonTextCounts[buttonText] then
             buttonTextCounts[buttonText] = buttonTextCounts[buttonText] + 1
@@ -91,20 +112,34 @@ SB.tablesWithUniqueTexts = function(inputUI)
     end
     
     -- Separate the inputUI into unique and duplicate tables
-    for _, buttonTable in ipairs(inputUI) do
+    for _, buttonTable in pairs(inputUI) do
         local buttonText = buttonTable.text
         if buttonTextCounts[buttonText] > 1 then
             table.insert(duplicateButtonTextTables, buttonTable)
-           -- print("Adding table with text '" .. buttonText .. "' to duplicateTables")
         else
             table.insert(uniqueButtonTextTables, buttonTable)
-           -- print("Adding table with text '" .. buttonText .. "' to uniqueTables")
         end
     end
+   -- print("returning tables with counts:\n #uniqueButtonTextTables, #duplicateButtonTextTables: ", #uniqueButtonTextTables, ", ", #duplicateButtonTextTables)
     
-    print("returning tables with counts:\n #uniqueButtonTextTables, #duplicateButtonTextTables: ", #uniqueButtonTextTables, ", ", #duplicateButtonTextTables)
+--[[
+    print("inputUI content:")
+    printTable(inputUI)
+    
+    print("uniqueButtonTextTables content:")
+    printTable(uniqueButtonTextTables)
+    
+    print("duplicateButtonTextTables content:")
+    printTable(duplicateButtonTextTables)
+    
+    print("buttonTextCounts content:")
+    printTable(buttonTextCounts)
+]]
+    
     return uniqueButtonTextTables, duplicateButtonTextTables
 end
+
+
 
 
 SB.allCodeExcludingButtonsAndBackup = function()
@@ -543,7 +578,7 @@ SB.formatButtonDataString = function (traceback, ui)
     "    action = SB.defaultButtonAction\n}\n\n"
 end
 
-function SB.sortUITables(uiTables, code)
+SB.sortUITables = function(uiTables, code)
     -- Get matched and not-matched texts
     local matchedTexts, notMatchedTexts = SB.tablesWithTextsFoundAndNot(uiTables, code)
     
@@ -555,7 +590,7 @@ end
 
 SB.stringForButtonTablesTab = function(uniques, duplicates, notMatched)
     local buttonTablesString = ""
-    buttonTablesString = SB.appendUiTablesTo(buttonTablesString, duplicates)
+    buttonTablesString = SB.appendUiTablesTo(buttonTablesString, uniques)
     return buttonTablesString
 end
 

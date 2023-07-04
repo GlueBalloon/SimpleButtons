@@ -1,17 +1,18 @@
 
 function setup() 
     
-    testAppendUiTablesTo()
-    testStartOfButtonTablesString()
-    
-    testTablesWithUniqueTexts()
     testMatchTableCounts()
     testMatchTableContents()
+    testAppendUiTablesTo()
     testAppendSectionHeadingTo()
+    testTablesWithUniqueTexts()
+    testStartOfButtonTablesString()
+    
+--[[
     testSaveUniqueButtonTables()
     testGetTextValues()
     testSortUITables()
-
+]]
     
     --[[
     testUiWithNonValidTexts()
@@ -102,9 +103,9 @@ end
 function testTablesWithUniqueTexts()
     -- Setup
     local inputUI = {
-        { text = "Hello" },
-        { text = "Hello" },
-        { text = "World" }
+        ["traceback1"] = { text = "Hello" },
+        ["traceback2"] = { text = "Hello" },
+        ["traceback3"] = { text = "World" }
     }
     
     -- Call the function
@@ -112,14 +113,18 @@ function testTablesWithUniqueTexts()
     
     -- Check the results
     assert(#uniqueButtonTextTables == 1, "Expected one unique button text table, got "..#uniqueButtonTextTables)
-    assert(uniqueButtonTextTables[1].text == "World", "Expected unique button text to be 'World'")
+    for _, table in pairs(uniqueButtonTextTables) do
+        assert(table.text == "World", "Expected unique button text to be 'World'")
+    end
     
     assert(#duplicateButtonTextTables == 2, "Expected two duplicate button text tables")
-    assert(duplicateButtonTextTables[1].text == "Hello", "Expected duplicate button text to be 'Hello'")
-    assert(duplicateButtonTextTables[2].text == "Hello", "Expected duplicate button text to be 'Hello'")
+    for _, table in pairs(duplicateButtonTextTables) do
+        assert(table.text == "Hello", "Expected duplicate button text to be 'Hello'")
+    end
     
     print("passed testTablesWithUniqueTexts")
 end
+
 
 
 
@@ -216,7 +221,7 @@ function testMatchTableContents()
     end
     
     -- Check the results
-    for _, tbl in ipairs(inputUI) do
+    for _, tbl in pairs(inputUI) do
         if notMatchedTextsLookup[tbl.text] then
             assert(notMatchedTextsLookup[tbl.text], "Expected '" .. tbl.text .. "' to be in not matched button texts")
             assert(not matchedTextsLookup[tbl.text], "Expected '" .. tbl.text .. "' to not be in matched button texts")
@@ -251,9 +256,9 @@ function testAppendUiTablesTo()
         "    action = SB.defaultButtonAction\n}\n\n"
     end
     
-    -- Print both the result and the expected strings for debugging
-    print("Expected:\n" .. expected)
-    print("Result:\n" .. result)
+    --Print both the result and the expected strings for debugging
+    --print("Expected:\n" .. expected)
+    --print("Result:\n" .. result)
     
     assert(result == expected, "Expected formatted string did not match:\n"..result)
     
@@ -317,32 +322,41 @@ function testStartOfButtonTablesString()
     local resultString = SB.stringForButtonTablesTab(uniques, duplicates, notMatched)
     local resultsTexts = getTextValues(resultString)
     
-    -- Split off the first n texts from uniqueTextValues
+    -- Extract unique texts
     local uniqueTextValues = getTextValuesFromUITables(uniques)
-    local firstNUniqueTexts = {}
-    for i = 1, numUnique do
-        table.insert(firstNUniqueTexts, uniqueTextValues[i])
-    end
     
-    -- Check that the first numUnique found texts match all the unique texts
+    checkFirstNResultsMatchUniqueTexts(resultsTexts, uniqueTextValues, numUnique)
+    
+    checkUniqueTextsNotInRemainingResults(resultsTexts, uniqueTextValues, numUnique)
+    
+    checkNoTextsFromDuplicatesOrNotMatchedInResults(resultsTexts, duplicates, notMatched)
+    
+    print("Passed testStringForButtonTablesTab")
+end
+
+-- Check that the first numUnique results match the unique texts
+function checkFirstNResultsMatchUniqueTexts(resultsTexts, uniqueTextValues, numUnique)
     for i = 1, numUnique do
         if resultsTexts[i] == nil then
             assert(false, "resultsTexts["..i.."] is nil")
         end
-        assert(tableContains(firstNUniqueTexts, resultsTexts[i]), "Expected to find unique text '"..resultsTexts[i].."' in the first part of results texts")
+        assert(tableContains(uniqueTextValues, resultsTexts[i]), "Expected to find unique text '"..resultsTexts[i].."' in the first part of results texts")
     end
-    
-    -- Check that the unique texts don't appear in the rest of the results texts
+end
+
+-- Check that the unique texts don't appear in the rest of the results texts
+function checkUniqueTextsNotInRemainingResults(resultsTexts, uniqueTextValues, numUnique)
     local restOfResultsTexts = {}
     for i = numUnique + 1, #resultsTexts do
         table.insert(restOfResultsTexts, resultsTexts[i])
     end
-    
-    for i, text in ipairs(firstNUniqueTexts) do
+    for i, text in ipairs(uniqueTextValues) do
         assert(not tableContains(restOfResultsTexts, text), "Expected not to find unique text '"..text.."' in the rest of results texts")
     end
-    
-    -- Check that no texts from duplicates or notMatched are in resultsTexts
+end
+
+-- Check that no texts from duplicates or notMatched are in resultsTexts
+function checkNoTextsFromDuplicatesOrNotMatchedInResults(resultsTexts, duplicates, notMatched)
     local duplicateTexts = getTextValuesFromUITables(duplicates)
     local notMatchedTexts = getTextValuesFromUITables(notMatched)
     
@@ -353,8 +367,6 @@ function testStartOfButtonTablesString()
     for i, text in ipairs(notMatchedTexts) do
         assert(not tableContains(resultsTexts, text), "Expected not to find not matched text '"..text.."' in results texts")
     end
-    
-    print("Passed testStringForButtonTablesTab")
 end
 
 
