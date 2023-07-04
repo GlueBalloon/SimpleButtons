@@ -64,8 +64,8 @@ SB.tablesWithTextsFoundAndNot = function(uiTables, code)
 end
 
 SB.appendUiTablesTo = function(targetString, uiTables)
-    for _, entry in ipairs(uiTables) do
-        targetString = targetString .. SB.formatButtonDataString(entry.traceback, entry)
+    for traceback, entry in pairs(uiTables) do
+        targetString = targetString .. SB.formatButtonDataString(traceback, entry)
     end
     return targetString
 end
@@ -386,13 +386,13 @@ end)
 
 SB.addTableWithText = function(bText, traceback)
     SB.ui[traceback] = SB.defaultButton(bText)
+    return SB.ui[traceback]
 end
 
 SB.defaultButton = function(bText)
     return {text=bText,
     x=0.5, y=0.5, action=SB.defaultButtonAction}
 end
-
 
 SB.defaultButtonAction = function()
     print("this is the default button action")

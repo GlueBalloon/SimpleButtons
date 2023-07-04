@@ -123,41 +123,58 @@ end
 
 
 
+local function generateTestButton(text, index, inputUI, testCode)
+    local traceback = "Traceback " .. text .. " " .. index
+    local uiTable = SB.defaultButton(text)
+    inputUI[traceback] = uiTable
+    
+    -- Replace SB.ui[...] declaration with SB.button(...) call
+    local buttonCode = SB.formatButtonDataString(traceback, uiTable)
+    buttonCode = buttonCode:gsub("SB.ui%[ %[%[.*%]%] %] = ", "SB.button(")
+    buttonCode = buttonCode:gsub("\n%}\n\n", ")")
+    testCode = testCode .. buttonCode
+    
+    return inputUI, testCode
+end
+
 local function generateTestData(numUnique, numDuplicates, numNotMatched)
     local inputUI = {}
     local testCode = [[
     function sayHello()
     ]]
-    
+
     -- Generate unique tables and matching code
     for i = 1, numUnique do
         local text = "Unique " .. i
-        inputUI[#inputUI + 1] = { text = text }
-        testCode = testCode .. 'SB.button({text = [[' .. text .. ']]})\n'
-        --print("Generating unique table with text: " .. text)
+        inputUI, testCode = generateTestButton(text, i, inputUI, testCode)
     end
     
     -- Generate duplicate tables and matching code
     for i = 1, numDuplicates do
         local text = "Duplicate"
-        inputUI[#inputUI + 1] = { text = text }
+        local uiTable = SB.defaultButton(text)
         if i == 1 then
-            testCode = testCode .. 'SB.button({text = [[' .. text .. ']]})\n'
-           -- print("Generating duplicate table with text: " .. text)
+            inputUI, testCode = generateTestButton(text, i, inputUI, testCode)
+        else
+            local traceback = "Traceback " .. text .. " " .. i
+            inputUI[traceback] = uiTable
         end
     end
     
     -- Generate not matched tables (no matching code)
     for i = 1, numNotMatched do
         local text = "Not Matched " .. i
-        inputUI[#inputUI + 1] = { text = text }
-        --print("Generating not matched table with text: " .. text)
+        local traceback = "Traceback " .. text .. " " .. i
+        local uiTable = SB.defaultButton(text)
+        inputUI[traceback] = uiTable
     end
     
     testCode = testCode .. 'end\n'
     
     return inputUI, testCode, numDuplicates, numUnique
 end
+
+
 
 
 -- Test function
@@ -216,35 +233,35 @@ function testAppendUiTablesTo()
     -- Setup
     local targetString = "-- Existing data\n"
     local uiTables = {
-        {
-            traceback = "traceback for Hello, World!",
-            ui = { text = "Hello, World!", x = 10, y = 20, width = 30, height = 40 }
-        },
-        {
-            traceback = "traceback for Hello, Test!",
-            ui = { text = "Hello, Test!", x = 50, y = 60, width = 70, height = 80 }
-        }
+        ["traceback for Hello, World!"] = SB.defaultButton("Hello, World!"),
+        ["traceback for Hello, Test!"] = SB.defaultButton("Hello, Test!")
     }
     
     -- Call the function
     local result = SB.appendUiTablesTo(targetString, uiTables)
     
     -- Check the results
-    local expected = "-- Existing data\n" ..
-    "SB.ui[ [[" .. uiTables[1].traceback .. "]] ] = \n" ..
-    "    {text = [[" .. uiTables[1].ui.text .. "]],\n" ..
-    "    x = " .. uiTables[1].ui.x .. ", y = " .. uiTables[1].ui.y .. ",\n" ..
-    "    width = " .. uiTables[1].ui.width .. ", height = " .. uiTables[1].ui.height .. ",\n" ..
-    "    action = SB.defaultButtonAction\n}\n\n" ..
-    "SB.ui[ [[" .. uiTables[2].traceback .. "]] ] = \n" ..
-    "    {text = [[" .. uiTables[2].ui.text .. "]],\n" ..
-    "    x = " .. uiTables[2].ui.x .. ", y = " .. uiTables[2].ui.y .. ",\n" ..
-    "    width = " .. uiTables[2].ui.width .. ", height = " .. uiTables[2].ui.height .. ",\n" ..
-    "    action = SB.defaultButtonAction\n}\n\n"
+    local expected = "-- Existing data\n"
+    for traceback, ui in pairs(uiTables) do
+        expected = expected ..
+        "SB.ui[ [[" .. traceback .. "]] ] = \n" ..
+        "    {text = [[" .. ui.text .. "]],\n" ..
+        "    x = " .. ui.x .. ", y = " .. ui.y .. ",\n" ..
+        "    width = " .. tostring(ui.width) .. ", height = " .. tostring(ui.height) .. ",\n" ..
+        "    action = SB.defaultButtonAction\n}\n\n"
+    end
+    
+    -- Print both the result and the expected strings for debugging
+    print("Expected:\n" .. expected)
+    print("Result:\n" .. result)
+    
     assert(result == expected, "Expected formatted string did not match:\n"..result)
     
     print("passed testAppendUiTablesTo")
 end
+
+
+
 
 function testAppendSectionHeadingTo()
     local targetString = "Some existing text\n\n"
