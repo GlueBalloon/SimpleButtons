@@ -1,5 +1,5 @@
-# Particle-Emitter-Studio-Codea
+# Simple Buttons
 
-Application and class to create particle emitters.
+Project to enable quick, easy, and Codea-like buttons. 
 
 ![image](./Icon@2x.png)
